@@ -61,10 +61,12 @@ def _get_project_root():
             "The VIRTUAL_ENV environment variable is not set or is empty. "
             "Ensure that a virtual environment is activated."
         )
-    
+
     venv_path = Path(venv_env_var)
-    
+
     if not venv_path.exists():
-        raise OSError(f"The directory specified by VIRTUAL_ENV ({venv_path}) does not exist.")
+        raise OSError(
+            f"The directory specified by VIRTUAL_ENV ({venv_path}) does not exist."
+        )
 
     return venv_path.parent

@@ -1,7 +1,10 @@
 import pandas as pd
 from typing import Any, Dict, List, Union, Tuple, Type
 
-def _check_required_columns(data: pd.DataFrame, required_columns: Union[str, List[str]]) -> None:
+
+def _check_required_columns(
+    data: pd.DataFrame, required_columns: Union[str, List[str]]
+) -> None:
     """
     Checks if the DataFrame contains the required columns.
 
@@ -24,7 +27,7 @@ def _check_required_columns(data: pd.DataFrame, required_columns: Union[str, Lis
         required_columns = set(required_columns)
     else:
         raise TypeError("`required_columns` must be a string or a list of strings.")
-    
+
     if not required_columns.issubset(data.columns):
         missing_cols = required_columns - set(data.columns)
         raise ValueError(
@@ -32,10 +35,8 @@ def _check_required_columns(data: pd.DataFrame, required_columns: Union[str, Lis
         )
 
 
-
 def _check_param_type(
-    params: Dict[str, Any], 
-    param_type: Union[Type, Tuple[Type, ...]]
+    params: Dict[str, Any], param_type: Union[Type, Tuple[Type, ...]]
 ) -> None:
     """
     Checks if the provided parameters (given as a dictionary of names and values) are of the specified type or types.
@@ -61,4 +62,4 @@ def _get_type_name(param_type: Union[Type, Tuple[Type, ...]]) -> str:
     if isinstance(param_type, Type):
         return param_type.__name__
     else:
-        return ' or '.join(t.__name__ for t in param_type)
+        return " or ".join(t.__name__ for t in param_type)

@@ -144,7 +144,9 @@ def test_plot_smd_empty_dataframe():
     """Test plotting with an empty DataFrame."""
     df = pd.DataFrame(columns=["variables", "unadjusted_smd"])
 
-    with pytest.raises(ValueError, match="The input DataFrame is empty. Cannot plot SMD."):
+    with pytest.raises(
+        ValueError, match="The input DataFrame is empty. Cannot plot SMD."
+    ):
         plot_smd(data=df)
 
 
@@ -155,7 +157,7 @@ def test_plot_smd_extra_columns():
             "variables": ["age", "gender", "income"],
             "unadjusted_smd": [0.15, 0.35, 0.25],
             "adjusted_smd": [0.08, 0.12, 0.10],
-            "extra_column": [1, 2, 3]  # extra column
+            "extra_column": [1, 2, 3],  # extra column
         }
     )
 
@@ -171,7 +173,7 @@ def test_plot_smd_non_numeric_values_in_smd_columns():
         {
             "variables": ["age", "gender", "income"],
             "unadjusted_smd": [0.15, "high", 0.25],  # Non-numeric value
-            "adjusted_smd": [0.08, 0.12, "low"]  # Non-numeric value
+            "adjusted_smd": [0.08, 0.12, "low"],  # Non-numeric value
         }
     )
 

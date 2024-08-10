@@ -6,7 +6,13 @@ import matplotlib.pyplot as plt
 from typing import List, Union, Optional, Type
 
 
-def compute_smd(data: pd.DataFrame, vars: List[str], group: str, wt_var: str = None, estimand: str = 'ATE') -> pd.DataFrame:
+def compute_smd(
+    data: pd.DataFrame,
+    vars: List[str],
+    group: str,
+    wt_var: str = None,
+    estimand: str = "ATE",
+) -> pd.DataFrame:
     """
     Computes the standardized mean difference (SMD) for a list of variables.
 
@@ -14,7 +20,7 @@ def compute_smd(data: pd.DataFrame, vars: List[str], group: str, wt_var: str = N
     -----------
     - data (pd.DataFrame): A pandas DataFrame containing the `vars`, `group`, and `wt_var` columns.
     - vars (List[str]): A list of strings representing the variables for which to calculate the SMD.
-    - group (str): The name of the binary group column (e.g., treatment vs. control). 
+    - group (str): The name of the binary group column (e.g., treatment vs. control).
     - wt_var (str, optional): The name of the weights column. Defaults to None.
     - estimand (str, optional): The estimand type. Only 'ATE' is supported. Defaults to 'ATE'.
 
@@ -23,32 +29,45 @@ def compute_smd(data: pd.DataFrame, vars: List[str], group: str, wt_var: str = N
     pd.DataFrame: A DataFrame with two columns: 'Variable' and 'SMD', representing the variable names and their corresponding SMD values.
     """
 
-    data = _check_smd_data(data=data, group=group, vars=vars, wt_var=wt_var, estimand=estimand)
-    
+    data = _check_smd_data(
+        data=data, group=group, vars=vars, wt_var=wt_var, estimand=estimand
+    )
+
     smd_results = []
 
     for var in vars:
         if wt_var is not None:
-            unadjusted_smd = _calc_smd_covar(data=data, group=group, covar=var, estimand=estimand)
-            adjusted_smd = _calc_smd_covar(data=data, group=group, covar=var, wt_var=wt_var, estimand=estimand)
-            smd_results.append({
-                'variable': var, 
-                'unadjusted_smd': unadjusted_smd,
-                'adjusted_smd': adjusted_smd
-            })
+            unadjusted_smd = _calc_smd_covar(
+                data=data, group=group, covar=var, estimand=estimand
+            )
+            adjusted_smd = _calc_smd_covar(
+                data=data, group=group, covar=var, wt_var=wt_var, estimand=estimand
+            )
+            smd_results.append(
+                {
+                    "variable": var,
+                    "unadjusted_smd": unadjusted_smd,
+                    "adjusted_smd": adjusted_smd,
+                }
+            )
         else:
-            unadjusted_smd = _calc_smd_covar(data=data, group=group, covar=var, estimand=estimand)
-            smd_results.append({
-                'variable': var, 
-                'unadjusted_smd': unadjusted_smd
-            })
+            unadjusted_smd = _calc_smd_covar(
+                data=data, group=group, covar=var, estimand=estimand
+            )
+            smd_results.append({"variable": var, "unadjusted_smd": unadjusted_smd})
 
     smd_df = pd.DataFrame(smd_results)
-    
+
     return smd_df
 
 
-def _calc_smd_covar(data: pd.DataFrame, group: str, covar: str, wt_var: str = None, estimand: str = 'ATE') -> float:
+def _calc_smd_covar(
+    data: pd.DataFrame,
+    group: str,
+    covar: str,
+    wt_var: str = None,
+    estimand: str = "ATE",
+) -> float:
     """
     Calculates standardized mean differences (SMD) of a covariate for the `group` variable.
 
@@ -64,7 +83,9 @@ def _calc_smd_covar(data: pd.DataFrame, group: str, covar: str, wt_var: str = No
     --------
     - float: Standardized Mean Difference.
     """
-    data = _check_smd_data(data=data, group=group, vars=covar, wt_var=wt_var, estimand=estimand)
+    data = _check_smd_data(
+        data=data, group=group, vars=covar, wt_var=wt_var, estimand=estimand
+    )
 
     grp_1_dt = data[data[group] == 1]
     grp_0_dt = data[data[group] == 0]
@@ -82,7 +103,9 @@ def _calc_smd_covar(data: pd.DataFrame, group: str, covar: str, wt_var: str = No
         if data[covar].dropna().nunique() == 2:
             return _calc_smd_bin_covar(estimand, m1=m1, m0=m0, wt_m1=wt_m1, wt_m0=wt_m0)
         else:
-            return _calc_smd_cont_covar(estimand, m1=wt_m1, m0=wt_m0, s2_1=s2_1, s2_0=s2_0)
+            return _calc_smd_cont_covar(
+                estimand, m1=wt_m1, m0=wt_m0, s2_1=s2_1, s2_0=s2_0
+            )
     else:
         if data[covar].dropna().nunique() == 2:
             return _calc_smd_bin_covar(estimand, m1=m1, m0=m0)
@@ -90,8 +113,13 @@ def _calc_smd_covar(data: pd.DataFrame, group: str, covar: str, wt_var: str = No
             return _calc_smd_cont_covar(estimand, m1=m1, m0=m0, s2_1=s2_1, s2_0=s2_0)
 
 
-
-def _check_smd_data(data: pd.DataFrame, group: str, vars: Union[str, List[str]], wt_var: str = None, estimand: str = 'ATE') -> pd.DataFrame:
+def _check_smd_data(
+    data: pd.DataFrame,
+    group: str,
+    vars: Union[str, List[str]],
+    wt_var: str = None,
+    estimand: str = "ATE",
+) -> pd.DataFrame:
     if not isinstance(data, pd.DataFrame):
         raise TypeError("The `data` parameter must be a pandas DataFrame.")
 
@@ -103,7 +131,9 @@ def _check_smd_data(data: pd.DataFrame, group: str, vars: Union[str, List[str]],
 
     if not required_columns.issubset(data.columns):
         missing_cols = required_columns - set(data.columns)
-        raise ValueError(f"The DataFrame is missing the following required columns: {', '.join(missing_cols)}")
+        raise ValueError(
+            f"The DataFrame is missing the following required columns: {', '.join(missing_cols)}"
+        )
 
     unique_groups = data[group].dropna().unique()
     if len(unique_groups) == 2:
@@ -111,7 +141,9 @@ def _check_smd_data(data: pd.DataFrame, group: str, vars: Union[str, List[str]],
             min_val, max_val = min(unique_groups), max(unique_groups)
             data[group] = data[group].apply(lambda x: 0 if x == min_val else 1)
     else:
-        raise ValueError(f"The '{group}' column must be a binary column for valid SMD calculation.")
+        raise ValueError(
+            f"The '{group}' column must be a binary column for valid SMD calculation."
+        )
 
     for var in vars:
         unique_vals = data[var].dropna().unique()
@@ -124,9 +156,9 @@ def _check_smd_data(data: pd.DataFrame, group: str, vars: Union[str, List[str]],
 
 def _calc_smd_bin_covar(estimand, *args, **kwargs):
     estimand_to_function = {
-        'ATE': _calc_smd_bin_covar_ate,
-        'ATT': _calc_smd_bin_covar_att,
-        'ATC': _calc_smd_bin_covar_atc
+        "ATE": _calc_smd_bin_covar_ate,
+        "ATT": _calc_smd_bin_covar_att,
+        "ATC": _calc_smd_bin_covar_atc,
     }
     function_to_call = estimand_to_function.get(estimand)
 
@@ -134,12 +166,13 @@ def _calc_smd_bin_covar(estimand, *args, **kwargs):
         return function_to_call(*args, **kwargs)
     else:
         raise ValueError(f"Invalid estimand value: {estimand}")
+
 
 def _calc_smd_cont_covar(estimand, *args, **kwargs):
     estimand_to_function = {
-        'ATE': _calc_smd_cont_covar_ate,
-        'ATT': _calc_smd_cont_covar_att,
-        'ATC': _calc_smd_cont_covar_atc
+        "ATE": _calc_smd_cont_covar_ate,
+        "ATT": _calc_smd_cont_covar_att,
+        "ATC": _calc_smd_cont_covar_atc,
     }
     function_to_call = estimand_to_function.get(estimand)
 
@@ -147,6 +180,7 @@ def _calc_smd_cont_covar(estimand, *args, **kwargs):
         return function_to_call(*args, **kwargs)
     else:
         raise ValueError(f"Invalid estimand value: {estimand}")
+
 
 def _calc_smd_bin_covar_ate(m1, m0, wt_m1=None, wt_m0=None):
     wt_m1 = m1 if wt_m1 is None else wt_m1
@@ -156,8 +190,10 @@ def _calc_smd_bin_covar_ate(m1, m0, wt_m1=None, wt_m0=None):
     smd = _calc_raw_smd(a=wt_m1, b=wt_m0, std_factor=std_factor)
     return smd
 
+
 def _calc_smd_bin_covar_att(*args, **kwargs):
     raise NotImplementedError("SMD for ATT is not yet implemented.")
+
 
 def _calc_smd_bin_covar_atc(*args, **kwargs):
     raise NotImplementedError("SMD for ATC is not yet implemented.")
@@ -168,11 +204,14 @@ def _calc_smd_cont_covar_ate(m1, m0, s2_1, s2_0):
     smd = _calc_raw_smd(a=m1, b=m0, std_factor=std_factor)
     return smd
 
+
 def _calc_smd_cont_covar_att(*args, **kwargs):
     raise NotImplementedError("SMD for ATT is not yet implemented.")
 
+
 def _calc_smd_cont_covar_atc(*args, **kwargs):
     raise NotImplementedError("SMD for ATC is not yet implemented.")
+
 
 def _calc_raw_smd(a, b, std_factor):
     raw_smd = abs(a - b) / std_factor

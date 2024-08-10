@@ -4,6 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from skmiscpy import plot_mirror_histogram
 
+
 @pytest.fixture(autouse=True)
 def no_plot_show(monkeypatch):
     """Fixture to prevent plt.show() from displaying plots during tests."""

@@ -35,7 +35,9 @@ def test_here_valid_path(mock_venv):
 
 
 def test_here_empty_path(mock_venv):
-    with pytest.raises(ValueError, match="The `path` parameter cannot be an empty string."):
+    with pytest.raises(
+        ValueError, match="The `path` parameter cannot be an empty string."
+    ):
         here("")
 
 
@@ -45,7 +47,9 @@ def test_here_non_string_path(mock_venv):
 
 
 def test_here_absolute_path(mock_venv):
-    with pytest.raises(ValueError, match="The `path` parameter must be relative, not absolute."):
+    with pytest.raises(
+        ValueError, match="The `path` parameter must be relative, not absolute."
+    ):
         here("/absolute/path")
 
 
@@ -57,13 +61,17 @@ def test_here_no_venv(monkeypatch):
 
 def test_here_no_virtual_env_var(mock_venv, monkeypatch):
     monkeypatch.delenv("VIRTUAL_ENV")
-    with pytest.raises(OSError, match="The VIRTUAL_ENV environment variable is not set or is empty."):
+    with pytest.raises(
+        OSError, match="The VIRTUAL_ENV environment variable is not set or is empty."
+    ):
         here("test_path")
 
 
 def test_here_non_existent_venv(mock_venv, monkeypatch):
     monkeypatch.setenv("VIRTUAL_ENV", "/non/existent/path")
-    with pytest.raises(OSError, match="The directory specified by VIRTUAL_ENV .* does not exist."):
+    with pytest.raises(
+        OSError, match="The directory specified by VIRTUAL_ENV .* does not exist."
+    ):
         here("test_path")
 
 
@@ -110,8 +118,8 @@ def test_here_with_unicode(mock_venv):
 
 def test_here_cache(mock_venv):
     _get_project_root.cache_clear()
-    
+
     here("test_file.txt")
     here("test_file.txt")
-    
+
     assert _get_project_root.cache_info().hits == 1

@@ -47,7 +47,7 @@ def plot_smd(
 
     if not (0 <= ref_line_value <= 1):
         raise ValueError("The `ref_line_value` must be between 0 and 1.")
-    
+
     if data.empty:
         raise ValueError("The input DataFrame is empty. Cannot plot SMD.")
 
@@ -60,9 +60,11 @@ def plot_smd(
     if not pd.api.types.is_numeric_dtype(data[unadj_smd_col]):
         raise TypeError(f"The `{unadj_smd_col}` column must contain numerical data.")
 
-    if adj_smd_col in data.columns and not pd.api.types.is_numeric_dtype(data[adj_smd_col]):
+    if adj_smd_col in data.columns and not pd.api.types.is_numeric_dtype(
+        data[adj_smd_col]
+    ):
         raise TypeError(f"The `{adj_smd_col}` column must contain numerical data.")
-    
+
     if data[var_names_col].duplicated().any():
         duplicated_vars = data[var_names_col][data[var_names_col].duplicated()].unique()
         raise ValueError(

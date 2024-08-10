@@ -86,7 +86,7 @@ def plot_mirror_histogram(
     if not np.issubdtype(data[var].dtype, np.number):
         raise TypeError(f"The `{var}` column must contain numerical data.")
 
-    if weights is not None and not np.issubdtype(data[weights].dtype, np.number):
+    if weights is not None and not pd.api.types.is_numeric_dtype(data[weights]):
         raise TypeError(f"The `{weights}` column must contain numerical data.")
 
     group1, group2 = unique_groups

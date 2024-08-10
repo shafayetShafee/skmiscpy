@@ -3,7 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from typing import Union
-from .checker import _check_param_type
+from .checker import _check_param_type, _check_required_columns
 
 
 def plot_smd(
@@ -19,7 +19,7 @@ def plot_smd(
 
     Parameters:
     -----------
-    data: pd.DataFrame, required 
+    data : pd.DataFrame, required 
         A pandas DataFrame with at least two columns - `variables` and `unadjusted_smd`,
         containing the variables names and their associated unadjusted SMD values. Then
         only the unadjusted SMD will be plotted for the given variables. To include the
@@ -27,17 +27,17 @@ def plot_smd(
         containing the adjusted SMD values for the variables. Note: The column names must 
         be `variables`, `unadjusted_smd` and `adjusted_smd`.
     
-    add_ref_line: bool, optional 
+    add_ref_line : bool, optional 
         Whether to add a vertical reference line. Defaults to False.
 
-    ref_line_value: int or float, optional
+    ref_line_value : int or float, optional
         The value at which to draw a vertical reference line. Defaults to 0.1.
         A value between 0 to 1 should be set to this parameter.
     
-    *args: Optional
+    *args : Optional
         Additional positional arguments passed to Seaborn's pointplot.
 
-    **kwargs: Optional
+    **kwargs : Optional
         Additional keyword arguments passed to Seaborn's pointplot.
     """
     _check_param_type({"data": data}, param_type=pd.DataFrame)
@@ -51,13 +51,7 @@ def plot_smd(
     unadj_smd_col = "unadjusted_smd"
     adj_smd_col = "adjusted_smd"
 
-    required_columns = {var_names_col, unadj_smd_col}
-
-    if not required_columns.issubset(data.columns):
-        missing_cols = required_columns - set(data.columns)
-        raise ValueError(
-            f"The DataFrame is missing the following required columns: {', '.join(missing_cols)}"
-        )
+    _check_required_columns(data, [var_names_col, unadj_smd_col])
 
     if adj_smd_col not in data.columns:
         melted_data = data[[var_names_col, unadj_smd_col]].melt(

@@ -11,7 +11,7 @@ pip install skmiscpy
 ## Usage
 
 So far, `skmiscpy` can be used to do a basic causal analysis. Here very simple examples are shown for demonstration purposes.
-Check (Causal Analysis Workflow & Estimating ATE Using `skmiscpy`)[https://skmiscpy.readthedocs.io/en/latest/example.html] for
+Check [Causal Analysis Workflow & Estimating ATE Using `skmiscpy`](https://skmiscpy.readthedocs.io/en/latest/example.html) for
 better understanding.
 
 ``` python

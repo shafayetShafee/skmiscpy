@@ -48,7 +48,7 @@ def compute_smd(
     1. Basic usage with unadjusted SMD only:
 
     >>> import pandas as pd
-    >>> from your_module import compute_smd
+    >>> from skmiscpy import plot_smd
 
     >>> data = pd.DataFrame({
     >>>     'variable1': [1, 2, 3, 4],

@@ -67,6 +67,8 @@ def plot_mirror_histogram(
     >>> import pandas as pd
     >>> import seaborn as sns
     >>> import numpy as np
+    >>> from skmiscpy import plot_mirror_histogram
+    
     >>> data = pd.DataFrame({
     >>>     'group': [1, 1, 0, 0, 1, 0],
     >>>     'var': [2.0, 3.5, 3.0, 2.2, 2.2, 3.3]

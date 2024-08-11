@@ -36,6 +36,7 @@ def here(path: str) -> str:
     --------
     1. Constructing a path to a file in the project:
 
+    >>> from skmiscpy import here
     >>> here("data/input.csv")
     # If the project root is `/home/user/my_project` where you have a virtual env directory,
     # this will return an absolute path like

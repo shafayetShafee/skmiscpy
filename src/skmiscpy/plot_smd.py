@@ -53,7 +53,7 @@ def plot_smd(
     1. Basic usage with only unadjusted SMD:
 
     >>> import pandas as pd
-    >>> from your_module import plot_smd
+    >>> from skmiscpy import plot_smd
 
     >>> data = pd.DataFrame({
     >>>     'variables': ['var1', 'var2', 'var3'],

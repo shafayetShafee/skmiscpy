@@ -63,3 +63,47 @@ def _get_type_name(param_type: Union[Type, Tuple[Type, ...]]) -> str:
         return param_type.__name__
     else:
         return " or ".join(t.__name__ for t in param_type)
+
+
+def _check_variance_positive(variance: float, custom_msg: str) -> None:
+    """
+    Check if the variance is strictly positive.
+
+    Parameters
+    ----------
+    variance : float
+        The variance value to check. It should be a positive number.
+    var_name : str
+        The name of the variable corresponding to the variance. This is used for error messages.
+
+    Raises
+    ------
+    ValueError
+        If the variance is not strictly positive.
+    """
+    if variance <= 0:
+        raise ValueError(
+            f"The variance of {custom_msg} must be strictly positive. Found: {variance}."
+        )
+
+
+def _check_proportion_within_range(proportion: float, custom_msg: str) -> None:
+    """
+    Check if the proportion is within the range [0, 1].
+
+    Parameters
+    ----------
+    proportion : float
+        The proportion value to check. It should be a number between 0 and 1 (inclusive).
+    prop_name : str
+        The name of the variable corresponding to the proportion. This is used for error messages.
+
+    Raises
+    ------
+    ValueError
+        If the proportion is not within the range [0, 1].
+    """
+    if not (0 < proportion < 1):
+        raise ValueError(
+            f"The {custom_msg} must be within the range (0, 1). Found: {proportion}."
+        )

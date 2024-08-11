@@ -111,10 +111,10 @@ html_theme_options = {
             "link": "https://github.com/shafayetShafee/skmiscpy",
             "name": "Source on github.com",
         },
-        # {
-        #     "icon": "fontawesome/brands/python",
-        #     "link": "https://pypi.org/project/sphinx-immaterial/",
-        # },
+        {
+            "icon": "fontawesome/brands/python",
+            "link": "https://pypi.org/project/skmiscpy/",
+        },
     ],
     # END: social icons
 }

@@ -14,31 +14,83 @@ def plot_smd(
     **kwargs,
 ) -> None:
     """
-    Plots the standardized mean difference (SMD) for variables as a point (also known as love-plot),
-    displaying unadjusted (and also adjusted, if provided) SMDs. Optionally includes a vertical reference line.
+    Plots the standardized mean difference (SMD) for variables as a point plot (also known as a love plot),
+    displaying unadjusted (and adjusted, if provided) SMDs. Optionally includes a vertical reference line.
 
-    Parameters:
-    -----------
-    data : pd.DataFrame, required
-        A pandas DataFrame with at least two columns - `variables` and `unadjusted_smd`,
-        containing the variables names and their associated unadjusted SMD values. Then
-        only the unadjusted SMD will be plotted for the given variables. To include the
-        adjusted SMD in the plot, the DataFrame needs to contain another column `adjusted_smd`
-        containing the adjusted SMD values for the variables. Note: The column names must
-        be `variables`, `unadjusted_smd` and `adjusted_smd`.
+    Parameters
+    ----------
+    data : pd.DataFrame
+        A pandas DataFrame with at least two columns: `variables` and `unadjusted_smd`,
+        containing the variable names and their associated unadjusted SMD values. To include 
+        the adjusted SMD in the plot, the DataFrame must also contain a column `adjusted_smd` 
+        with the adjusted SMD values. The column names must be `variables`, `unadjusted_smd`, 
+        and `adjusted_smd`.
 
     add_ref_line : bool, optional
         Whether to add a vertical reference line. Defaults to False.
 
     ref_line_value : int or float, optional
-        The value at which to draw a vertical reference line. Defaults to 0.1.
-        A value between 0 to 1 should be set to this parameter.
+        The value at which to draw the vertical reference line. Defaults to 0.1. 
+        Must be between 0 and 1.
 
-    *args : Optional
-        Additional positional arguments passed to Seaborn's pointplot.
+    *args : optional
+        Additional positional arguments passed to Seaborn's `pointplot`.
 
-    **kwargs : Optional
-        Additional keyword arguments passed to Seaborn's pointplot.
+    **kwargs : optional
+        Additional keyword arguments passed to Seaborn's `pointplot`.
+
+    Raises
+    ------
+    ValueError
+        If `ref_line_value` is not between 0 and 1, or if the input DataFrame is empty.
+        
+    TypeError
+        If `data` is not a pandas DataFrame, or if `add_ref_line` is not a boolean. 
+        Additionally, raises TypeError if `ref_line_value` is not an integer or float.
+
+    Examples
+    --------
+    1. Basic usage with only unadjusted SMD:
+
+    >>> import pandas as pd
+    >>> from your_module import plot_smd
+
+    >>> data = pd.DataFrame({
+    >>>     'variables': ['var1', 'var2', 'var3'],
+    >>>     'unadjusted_smd': [0.2, 0.5, 0.3]
+    >>> })
+
+    >>> plot_smd(data)
+    # This will plot the unadjusted SMD values with default settings.
+
+    2. Including adjusted SMD with a reference line:
+
+    >>> data = pd.DataFrame({
+    >>>     'variables': ['var1', 'var2', 'var3'],
+    >>>     'unadjusted_smd': [0.2, 0.5, 0.3],
+    >>>     'adjusted_smd': [0.1, 0.4, 0.2]
+    >>> })
+
+    >>> plot_smd(data, add_ref_line=True, ref_line_value=0.3)
+    # This will plot both unadjusted and adjusted SMD values, with a vertical reference line at 0.3.
+
+    3. Customizing the plot appearance:
+
+    >>> data = pd.DataFrame({
+    >>>     'variables': ['var1', 'var2', 'var3'],
+    >>>     'unadjusted_smd': [0.2, 0.5, 0.3],
+    >>>     'adjusted_smd': [0.1, 0.4, 0.2]
+    >>> })
+
+    >>> plot_smd(
+    >>>     data, 
+    >>>     add_ref_line=True, 
+    >>>     ref_line_value=0.2, 
+    >>>     palette='husl', 
+    >>>     markers=['o', 'D'], 
+    >>>     linestyle='--'
+    >>> )
+    # This will plot the SMD values with custom color palette, markers, and linestyle for the plot.
     """
 
     _check_param_type({"data": data}, param_type=pd.DataFrame)

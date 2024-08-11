@@ -18,19 +18,69 @@ def compute_smd(
     """
     Computes the standardized mean difference (SMD) for a list of variables.
 
-    Parameters:
-    -----------
-    - data (pd.DataFrame): A pandas DataFrame containing the `vars`, `group`, and `wt_var` columns.
-    - vars (List[str]): A list of strings representing the variables for which to calculate the SMD.
-    - group (str): The name of the binary group column (e.g., treatment vs. control).
-    - wt_var (str, optional): The name of the weights column. Defaults to None.
-    - estimand (str, optional): The estimand type. Only 'ATE' is supported. Defaults to 'ATE'.
+    Parameters
+    ----------
+    data : pd.DataFrame
+        A pandas DataFrame containing the columns specified in `vars`, `group`, and optionally `wt_var`.
 
-    Returns:
+    vars : List[str]
+        A list of strings representing the variable names for which to calculate the SMD.
+
+    group : str
+        The name of the binary group column (e.g., treatment vs. control).
+
+    wt_var : str, optional
+        The name of the column containing weights. Defaults to None.
+
+    estimand : str, optional
+        The estimand type. Currently, only 'ATE' (Average Treatment Effect) is supported. Defaults to 'ATE'.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with columns:
+        - 'variable': The name of the variable.
+        - 'unadjusted_smd': The standardized mean difference without adjustment.
+        - 'adjusted_smd': The standardized mean difference with adjustment (if `wt_var` is provided).
+
+    Examples
     --------
-    pd.DataFrame: A DataFrame with two columns: 'Variable' and 'SMD', representing the variable names and their corresponding SMD values.
-    """
+    1. Basic usage with unadjusted SMD only:
 
+    >>> import pandas as pd
+    >>> from your_module import compute_smd
+
+    >>> data = pd.DataFrame({
+    >>>     'variable1': [1, 2, 3, 4],
+    >>>     'variable2': [2, 3, 4, 5],
+    >>>     'group': [0, 1, 0, 1]
+    >>> })
+
+    >>> compute_smd(data, vars=['variable1', 'variable2'], group='group')
+    # Returns a DataFrame with unadjusted SMD values for 'variable1' and 'variable2'.
+
+    2. Including weights for adjusted SMD:
+
+    >>> data = pd.DataFrame({
+    >>>     'variable1': [1, 2, 3, 4],
+    >>>     'variable2': [2, 3, 4, 5],
+    >>>     'group': [0, 1, 0, 1],
+    >>>     'weights': [1.5, 2.0, 1.2, 1.8]
+    >>> })
+
+    >>> compute_smd(data, vars=['variable1', 'variable2'], group='group', wt_var='weights')
+    # Returns a DataFrame with both unadjusted and adjusted SMD values for 'variable1' and 'variable2'.
+
+    3. Single variable input:
+
+    >>> data = pd.DataFrame({
+    >>>     'variable1': [1, 2, 3, 4],
+    >>>     'group': [0, 1, 0, 1]
+    >>> })
+
+    >>> compute_smd(data, vars='variable1', group='group')
+    # Returns a DataFrame with unadjusted SMD values for 'variable1'.
+    """
     data = _check_smd_data(
         data=data, group=group, vars=vars, wt_var=wt_var, estimand=estimand
     )
@@ -48,7 +98,7 @@ def compute_smd(
             )
             smd_results.append(
                 {
-                    "variable": var,
+                    "variables": var,
                     "unadjusted_smd": unadjusted_smd,
                     "adjusted_smd": adjusted_smd,
                 }
@@ -57,7 +107,7 @@ def compute_smd(
             unadjusted_smd = _calc_smd_covar(
                 data=data, group=group, covar=var, estimand=estimand
             )
-            smd_results.append({"variable": var, "unadjusted_smd": unadjusted_smd})
+            smd_results.append({"variables": var, "unadjusted_smd": unadjusted_smd})
 
     smd_df = pd.DataFrame(smd_results)
 

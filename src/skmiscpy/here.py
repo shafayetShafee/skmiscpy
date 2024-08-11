@@ -9,25 +9,58 @@ def here(path: str) -> str:
     Construct an absolute path relative to the project root directory.
     Requires an activated virtual environment to determine the project root.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     path : str
         A relative path to be resolved from the project root.
 
-    Returns:
-    --------
-    str : The absolute path constructed from the project root directory.
-
-    Raises:
+    Returns
     -------
-    OSError:
-        If the script is not running inside an activated virtual environment
+    str
+        The absolute path constructed from the project root directory.
+
+    Raises
+    ------
+    OSError
+        If the script is not running inside an activated virtual environment,
         or if the `VIRTUAL_ENV` environment variable is not set, empty,
         or points to a non-existent directory.
-    TypeError:
+
+    TypeError
         If the `path` parameter is not a string.
-    ValueError:
+
+    ValueError
         If the `path` parameter is empty or is an absolute path.
+
+    Examples
+    --------
+    1. Constructing a path to a file in the project:
+
+    >>> here("data/input.csv")
+    # If the project root is `/home/user/my_project` where you have a virtual env directory,
+    # this will return an absolute path like
+    # `/home/user/my_project/data/input.csv`.
+
+    2. Constructing a path to a subdirectory:
+
+    >>> here("src/my_module")
+    # If the project root is `/home/user/my_project`, this will return an absolute path
+    # like `/home/user/my_project/src/my_module`.
+
+    3. Handling errors with an empty path:
+
+    >>> here("")
+    # Raises ValueError: The `path` parameter cannot be an empty string.
+
+    4. Handling errors with an absolute path:
+
+    >>> here("/absolute/path/to/file")
+    # Raises ValueError: The `path` parameter must be relative, not absolute.
+
+    5. Handling errors with an invalid path type:
+
+    >>> here(123)
+    # Raises TypeError: The `path` parameter must be a string.
     """
     if not path:
         raise ValueError("The `path` parameter cannot be an empty string.")

@@ -26,25 +26,64 @@ def plot_mirror_histogram(
         A pandas DataFrame containing the `var` and `group` column.
 
     var : str
-        Name of the column for which histogram needs to be drawn.
+        Name of the column for which the histogram needs to be drawn.
 
     group : str
-        Name of the column based on which histogram will be mirrored.
+        Name of the binary column based on which the histogram will be mirrored.
 
     bins : int, optional
-        Number of bins for the histograms (default is 50).
+        Number of bins for the histograms. Default is 50.
 
     weights : str, optional
         Name of the column based on which the histogram will be weighted.
+        Default is None.
 
     xlabel : str, optional
-        Label for the x-axis.
+        Label for the x-axis. If not provided, defaults to the name of the `var` column.
 
     ylabel : str, optional
-        Label for the y-axis.
+        Label for the y-axis. If not provided, defaults to "Frequency".
 
     title : str, optional
-        Title of the plot.
+        Title of the plot. If not provided, defaults to "Mirror Histogram of `var` by `group`".
+
+    Raises
+    ------
+    TypeError
+        If `var`, `group`, `weights`, `xlabel`, `ylabel`, or `title` are not of type `str`.
+        If `data` is not a pandas DataFrame.
+        If `var` is not numerical.
+        If `weights` is not numerical.
+    
+    ValueError
+        If the `bins` parameter is not a positive integer.
+        If the `data` DataFrame is empty.
+        If the `group` column does not contain exactly two unique, non-NaN values.
+
+    Examples
+    --------
+    Example 1: Basic usage with numerical data.
+
+    >>> import pandas as pd
+    >>> import seaborn as sns
+    >>> import numpy as np
+    >>> data = pd.DataFrame({
+    >>>     'group': [1, 1, 0, 0, 1, 0],
+    >>>     'var': [2.0, 3.5, 3.0, 2.2, 2.2, 3.3]
+    >>> })
+    >>> plot_mirror_histogram(data=data, var='var', group='group')
+
+    Example 2: With weights and custom labels.
+
+    >>> data = pd.DataFrame({
+    >>>     'group': [1, 1, 0, 0, 1, 0],
+    >>>     'var': [2.0, 3.5, 3.0, 2.2, 2.2, 3.3],
+    >>>     'weights': [1.0, 1.5, 2.0, 1.2, 1.1, 0.8]
+    >>> })
+    >>> plot_mirror_histogram(
+    >>>     data=data, var='var', group='group', weights='weights',
+    >>>     xlabel='Variable', ylabel='Count', title='Weighted Mirror Histogram'
+    >>> )
     """
 
     _check_param_type({"data": data}, pd.DataFrame)

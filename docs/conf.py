@@ -6,9 +6,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u"skmiscpy"
-copyright = u"2024, Shafayet Khan Shafee"
-author = u"Shafayet Khan Shafee"
+project = "skmiscpy"
+copyright = "2024, Shafayet Khan Shafee"
+author = "Shafayet Khan Shafee"
 
 # -- General configuration ---------------------------------------------------
 
@@ -21,14 +21,20 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.mathjax",
-    "sphinx_immaterial"
+    "sphinx_immaterial",
 ]
 autoapi_dirs = ["../src"]
-autoapi_options = ['members', 'undoc-members', 'show-inheritance', 
-                   'show-module-summary', 'special-members', 'imported-members']
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "show-inheritance",
+    "show-module-summary",
+    "special-members",
+    "imported-members",
+]
 
-autoapi_ignore = ['*checker.py']
 myst_enable_extensions = ["dollarmath", "linkify"]
+
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -37,10 +43,18 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
 
+# These folders are copied to the documentation's HTML output
+html_static_path = ["_static"]
+
+html_css_files = ["css/custom.css"]
+
+html_js_files = [
+    "js/custom_copy.js",
+]
+
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_show_sphinx = False
-
 html_theme = "sphinx_immaterial"
 
 
@@ -61,10 +75,10 @@ html_theme_options = {
         # "toc.integrate",
         "navigation.sections",
         # "navigation.instant",
-        # "header.autohide",
+        "header.autohide",
         "navigation.top",
-        # "navigation.tracking",
-        # "search.highlight",
+        "navigation.tracking",
+        "search.highlight",
         "search.share",
         "toc.follow",
         "toc.sticky",
@@ -76,7 +90,7 @@ html_theme_options = {
             "media": "(prefers-color-scheme: light)",
             "scheme": "default",
             "primary": "indigo",
-            "accent": "light-green",
+            "accent": "teal",
             "toggle": {
                 "icon": "material/weather-night",
                 "name": "Switch to dark mode",
@@ -98,7 +112,7 @@ html_theme_options = {
     "version_info": [
         {
             "version": "https://skmiscpy.readthedocs.io",
-            "title": "ReadTheDocs",
+            "title": "stable",
             "aliases": [],
         },
     ],

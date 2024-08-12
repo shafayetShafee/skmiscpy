@@ -109,7 +109,6 @@ def _get_project_root():
     return venv_path.parent
 
 
-
 def _check_required_columns(
     data: pd.DataFrame, required_columns: Union[str, List[str]]
 ) -> None:

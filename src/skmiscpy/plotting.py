@@ -54,7 +54,7 @@ def plot_mirror_histogram(
         If `data` is not a pandas DataFrame.
         If `var` is not numerical.
         If `weights` is not numerical.
-    
+
     ValueError
         If the `bins` parameter is not a positive integer.
         If the `data` DataFrame is empty.
@@ -68,7 +68,7 @@ def plot_mirror_histogram(
     >>> import seaborn as sns
     >>> import numpy as np
     >>> from skmiscpy import plot_mirror_histogram
-    
+
     >>> data = pd.DataFrame({
     >>>     'group': [1, 1, 0, 0, 1, 0],
     >>>     'var': [2.0, 3.5, 3.0, 2.2, 2.2, 3.3]
@@ -183,7 +183,6 @@ def plot_mirror_histogram(
     plt.show()
 
 
-
 def plot_smd(
     data: pd.DataFrame,
     add_ref_line: bool = False,
@@ -199,16 +198,16 @@ def plot_smd(
     ----------
     data : pd.DataFrame
         A pandas DataFrame with at least two columns: `variables` and `unadjusted_smd`,
-        containing the variable names and their associated unadjusted SMD values. To include 
-        the adjusted SMD in the plot, the DataFrame must also contain a column `adjusted_smd` 
-        with the adjusted SMD values. The column names must be `variables`, `unadjusted_smd`, 
+        containing the variable names and their associated unadjusted SMD values. To include
+        the adjusted SMD in the plot, the DataFrame must also contain a column `adjusted_smd`
+        with the adjusted SMD values. The column names must be `variables`, `unadjusted_smd`,
         and `adjusted_smd`.
 
     add_ref_line : bool, optional
         Whether to add a vertical reference line. Defaults to False.
 
     ref_line_value : int or float, optional
-        The value at which to draw the vertical reference line. Defaults to 0.1. 
+        The value at which to draw the vertical reference line. Defaults to 0.1.
         Must be between 0 and 1.
 
     *args : optional
@@ -221,9 +220,9 @@ def plot_smd(
     ------
     ValueError
         If `ref_line_value` is not between 0 and 1, or if the input DataFrame is empty.
-        
+
     TypeError
-        If `data` is not a pandas DataFrame, or if `add_ref_line` is not a boolean. 
+        If `data` is not a pandas DataFrame, or if `add_ref_line` is not a boolean.
         Additionally, raises TypeError if `ref_line_value` is not an integer or float.
 
     Examples
@@ -261,11 +260,11 @@ def plot_smd(
     >>> })
 
     >>> plot_smd(
-    >>>     data, 
-    >>>     add_ref_line=True, 
-    >>>     ref_line_value=0.2, 
-    >>>     palette='husl', 
-    >>>     markers=['o', 'D'], 
+    >>>     data,
+    >>>     add_ref_line=True,
+    >>>     ref_line_value=0.2,
+    >>>     palette='husl',
+    >>>     markers=['o', 'D'],
     >>>     linestyle='--'
     >>> )
     # This will plot the SMD values with custom color palette, markers, and linestyle for the plot.
@@ -332,4 +331,3 @@ def plot_smd(
     plt.title("Standardized Mean Difference for Variables")
     plt.legend(title="SMD Type")
     plt.show()
-

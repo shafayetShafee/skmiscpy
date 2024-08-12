@@ -27,7 +27,8 @@ jobs:
     - name: Use Codecov to track coverage
       uses: codecov/codecov-action@v2
       with:
-        files: ./coverage.xml 
+        files: ./coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Build documentation
       run: poetry run make html --directory docs/

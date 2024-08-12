@@ -2,7 +2,8 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from skmiscpy.smd import compute_smd, _check_smd_data, _calc_smd_covar
+from skmiscpy import compute_smd
+from skmiscpy.cbs import _check_smd_data, _calc_smd_covar
 
 
 @pytest.fixture
@@ -190,7 +191,14 @@ def test_calc_smd_covar_zero_variance():
         {
             "group": [1, 1, 0, 0, 1, 0],
             "binary_var": [1, 0, 0, 1, 1, 0],  # Non-zero variance
-            "cont_var": [2.0, 2.5, 3.0, 3.0, 2.2, 3.0],  # Zero variance for group 0 (all 3.0s)
+            "cont_var": [
+                2.0,
+                2.5,
+                3.0,
+                3.0,
+                2.2,
+                3.0,
+            ],  # Zero variance for group 0 (all 3.0s)
             "weights": [1.0, 1.5, 2.0, 1.2, 1.1, 0.8],
         }
     )

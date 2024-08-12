@@ -2,7 +2,7 @@ from importlib.metadata import version
 
 __version__ = version("skmiscpy")
 
-from skmiscpy.here import here
-from skmiscpy.smd import compute_smd
-from skmiscpy.plot_smd import plot_smd
-from skmiscpy.plot_mirror_histogram import plot_mirror_histogram
+from skmiscpy.utils import here
+from skmiscpy.cbs import compute_smd
+from skmiscpy.plotting import plot_smd
+from skmiscpy.plotting import plot_mirror_histogram

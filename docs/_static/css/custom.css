@@ -1,0 +1,4 @@
+/* disable user selection on python prompt */
+.highlight .gp, .highlight .go { /* Generic.Prompt, Generic.Output */
+    user-select: none;
+}

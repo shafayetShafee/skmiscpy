@@ -70,22 +70,22 @@ def plot_mirror_histogram(
     >>> from skmiscpy import plot_mirror_histogram
 
     >>> data = pd.DataFrame({
-    >>>     'group': [1, 1, 0, 0, 1, 0],
-    >>>     'var': [2.0, 3.5, 3.0, 2.2, 2.2, 3.3]
-    >>> })
+    ...     'group': [1, 1, 0, 0, 1, 0],
+    ...     'var': [2.0, 3.5, 3.0, 2.2, 2.2, 3.3]
+    ... })
     >>> plot_mirror_histogram(data=data, var='var', group='group')
 
     Example 2: With weights and custom labels.
 
     >>> data = pd.DataFrame({
-    >>>     'group': [1, 1, 0, 0, 1, 0],
-    >>>     'var': [2.0, 3.5, 3.0, 2.2, 2.2, 3.3],
-    >>>     'weights': [1.0, 1.5, 2.0, 1.2, 1.1, 0.8]
-    >>> })
+    ...     'group': [1, 1, 0, 0, 1, 0],
+    ...     'var': [2.0, 3.5, 3.0, 2.2, 2.2, 3.3],
+    ...     'weights': [1.0, 1.5, 2.0, 1.2, 1.1, 0.8]
+    ... })
     >>> plot_mirror_histogram(
-    >>>     data=data, var='var', group='group', weights='weights',
-    >>>     xlabel='Variable', ylabel='Count', title='Weighted Mirror Histogram'
-    >>> )
+    ...     data=data, var='var', group='group', weights='weights',
+    ...     xlabel='Variable', ylabel='Count', title='Weighted Mirror Histogram'
+    ... )
     """
 
     _check_param_type({"data": data}, pd.DataFrame)
@@ -202,25 +202,23 @@ def plot_smd(
         the adjusted SMD in the plot, the DataFrame must also contain a column `adjusted_smd`
         with the adjusted SMD values. The column names must be `variables`, `unadjusted_smd`,
         and `adjusted_smd`.
-
     add_ref_line : bool, optional
         Whether to add a vertical reference line. Defaults to False.
-
     ref_line_value : int or float, optional
         The value at which to draw the vertical reference line. Defaults to 0.1.
         Must be between 0 and 1.
 
-    *args : optional
+    Other Parameters
+    ----------------
+    *args
         Additional positional arguments passed to Seaborn's `pointplot`.
-
-    **kwargs : optional
+    **kwargs
         Additional keyword arguments passed to Seaborn's `pointplot`.
 
     Raises
     ------
     ValueError
         If `ref_line_value` is not between 0 and 1, or if the input DataFrame is empty.
-
     TypeError
         If `data` is not a pandas DataFrame, or if `add_ref_line` is not a boolean.
         Additionally, raises TypeError if `ref_line_value` is not an integer or float.
@@ -233,9 +231,9 @@ def plot_smd(
     >>> from skmiscpy import plot_smd
 
     >>> data = pd.DataFrame({
-    >>>     'variables': ['var1', 'var2', 'var3'],
-    >>>     'unadjusted_smd': [0.2, 0.5, 0.3]
-    >>> })
+    ...     'variables': ['var1', 'var2', 'var3'],
+    ...     'unadjusted_smd': [0.2, 0.5, 0.3]
+    ... })
 
     >>> plot_smd(data)
     # This will plot the unadjusted SMD values with default settings.
@@ -243,10 +241,10 @@ def plot_smd(
     2. Including adjusted SMD with a reference line:
 
     >>> data = pd.DataFrame({
-    >>>     'variables': ['var1', 'var2', 'var3'],
-    >>>     'unadjusted_smd': [0.2, 0.5, 0.3],
-    >>>     'adjusted_smd': [0.1, 0.4, 0.2]
-    >>> })
+    ...     'variables': ['var1', 'var2', 'var3'],
+    ...     'unadjusted_smd': [0.2, 0.5, 0.3],
+    ...     'adjusted_smd': [0.1, 0.4, 0.2]
+    ... })
 
     >>> plot_smd(data, add_ref_line=True, ref_line_value=0.3)
     # This will plot both unadjusted and adjusted SMD values, with a vertical reference line at 0.3.
@@ -254,19 +252,19 @@ def plot_smd(
     3. Customizing the plot appearance:
 
     >>> data = pd.DataFrame({
-    >>>     'variables': ['var1', 'var2', 'var3'],
-    >>>     'unadjusted_smd': [0.2, 0.5, 0.3],
-    >>>     'adjusted_smd': [0.1, 0.4, 0.2]
-    >>> })
+    ...     'variables': ['var1', 'var2', 'var3'],
+    ...     'unadjusted_smd': [0.2, 0.5, 0.3],
+    ...     'adjusted_smd': [0.1, 0.4, 0.2]
+    ... })
 
     >>> plot_smd(
-    >>>     data,
-    >>>     add_ref_line=True,
-    >>>     ref_line_value=0.2,
-    >>>     palette='husl',
-    >>>     markers=['o', 'D'],
-    >>>     linestyle='--'
-    >>> )
+    ...     data,
+    ...     add_ref_line=True,
+    ...     ref_line_value=0.2,
+    ...     palette='husl',
+    ...     markers=['o', 'D'],
+    ...     linestyle='--'
+    ... )
     # This will plot the SMD values with custom color palette, markers, and linestyle for the plot.
     """
 

@@ -48,13 +48,13 @@ def compute_smd(
     1. Basic usage with unadjusted SMD only:
 
     >>> import pandas as pd
-    >>> from skmiscpy import plot_smd
+    >>> from skmiscpy import compute_smd
 
     >>> data = pd.DataFrame({
-    >>>     'variable1': [1, 2, 3, 4],
-    >>>     'variable2': [2, 3, 4, 5],
-    >>>     'group': [0, 1, 0, 1]
-    >>> })
+    ...     'variable1': [1, 2, 3, 4],
+    ...     'variable2': [2, 3, 4, 5],
+    ...     'group': [0, 1, 0, 1]
+    ... })
 
     >>> compute_smd(data, vars=['variable1', 'variable2'], group='group')
     # Returns a DataFrame with unadjusted SMD values for 'variable1' and 'variable2'.
@@ -62,11 +62,11 @@ def compute_smd(
     2. Including weights for adjusted SMD:
 
     >>> data = pd.DataFrame({
-    >>>     'variable1': [1, 2, 3, 4],
-    >>>     'variable2': [2, 3, 4, 5],
-    >>>     'group': [0, 1, 0, 1],
-    >>>     'weights': [1.5, 2.0, 1.2, 1.8]
-    >>> })
+    ...     'variable1': [1, 2, 3, 4],
+    ...     'variable2': [2, 3, 4, 5],
+    ...     'group': [0, 1, 0, 1],
+    ...     'weights': [1.5, 2.0, 1.2, 1.8]
+    ... })
 
     >>> compute_smd(data, vars=['variable1', 'variable2'], group='group', wt_var='weights')
     # Returns a DataFrame with both unadjusted and adjusted SMD values for 'variable1' and 'variable2'.
@@ -74,9 +74,9 @@ def compute_smd(
     3. Single variable input:
 
     >>> data = pd.DataFrame({
-    >>>     'variable1': [1, 2, 3, 4],
-    >>>     'group': [0, 1, 0, 1]
-    >>> })
+    ...     'variable1': [1, 2, 3, 4],
+    ...     'group': [0, 1, 0, 1]
+    ... })
 
     >>> compute_smd(data, vars='variable1', group='group')
     # Returns a DataFrame with unadjusted SMD values for 'variable1'.

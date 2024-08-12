@@ -111,8 +111,13 @@ html_theme_options = {
     "version_dropdown": True,
     "version_info": [
         {
-            "version": "https://skmiscpy.readthedocs.io",
+            "version": "https://skmiscpy.readthedocs.io/en/stable/",
             "title": "stable",
+            "aliases": [],
+        },
+        {
+            "version": "https://skmiscpy.readthedocs.io/en/latest/",
+            "title": "latest",
             "aliases": [],
         },
     ],

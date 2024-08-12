@@ -2,7 +2,8 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from skmiscpy.smd import compute_smd, _check_smd_data, _calc_smd_covar
+from skmiscpy import compute_smd
+from skmiscpy.cbs import _check_smd_data, _calc_smd_covar
 
 
 @pytest.fixture

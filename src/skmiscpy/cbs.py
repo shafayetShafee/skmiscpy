@@ -4,8 +4,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from typing import List, Union
-from skmiscpy.checker import _check_param_type, _check_required_columns
-from skmiscpy.checker import _check_variance_positive, _check_proportion_within_range
+from skmiscpy.utils import _check_param_type, _check_required_columns
+from skmiscpy.utils import _check_variance_positive, _check_proportion_within_range
 
 
 def compute_smd(

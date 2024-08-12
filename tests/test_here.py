@@ -1,9 +1,8 @@
 import os
 import sys
 import pytest
-from pathlib import Path
 from skmiscpy import here
-from skmiscpy.here import _get_project_root
+from skmiscpy.utils import _get_project_root
 
 
 @pytest.fixture(autouse=True)

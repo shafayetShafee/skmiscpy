@@ -316,25 +316,22 @@ def test_compute_smd_invalid_estimand(sample_data):
         )
 
 
-def test_compute_smd_not_implemented_error(sample_data):
-    with pytest.raises(
-        NotImplementedError, match="SMD for ATC estimand is not yet implemented"
-    ):
-        compute_smd(
-            data=sample_data,
-            group="group",
-            vars="binary_var",
-            wt_var="weights",
-            estimand="ATC",
-        )
+def test_compute_smd_att_atc(sample_data):
+    att_smd = _calc_smd_covar(
+        data=sample_data,
+        group="group",
+        covar="cont_var",
+        wt_var="weights",
+        estimand="ATT",
+    )
+    assert isinstance(att_smd, float), "ATT SMD should return a float value"
 
-    with pytest.raises(
-        NotImplementedError, match="SMD for ATT estimand is not yet implemented"
-    ):
-        compute_smd(
-            data=sample_data,
-            group="group",
-            vars="cont_var",
-            wt_var="weights",
-            estimand="ATT",
-        )
+    atc_smd = _calc_smd_covar(
+        data=sample_data,
+        group="group",
+        covar="binary_var",
+        wt_var="weights",
+        estimand="ATC",
+    )
+    assert isinstance(atc_smd, float), "ATC SMD should return a float value"
+

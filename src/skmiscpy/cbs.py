@@ -135,7 +135,9 @@ def _calc_smd_covar(
     wt_var : str, optional
         The column name of the weights. If None, only the unadjusted SMD is calculated. Defaults to None.
     estimand : str, optional
-        The causal estimand to use. Supports only "ATE" (Average Treatment Effect) currently. Defaults to "ATE".
+        The causal estimand to use. Defaults to "ATE" (Average Treatment Effect). Currently supported
+        options are "ATT" (Average Treatment Effect among the Treated) and 
+        "ATC" (Average Treatment Effect among the Control group).
 
     Returns
     -------
@@ -372,20 +374,128 @@ def _calc_smd_cont_covar_ate(m1: float, m0: float, s2_1: float, s2_0: float) -> 
     return smd
 
 
-def _calc_smd_bin_covar_att(*args, **kwargs):
-    raise NotImplementedError("SMD for ATT estimand is not yet implemented.")
+def _calc_smd_bin_covar_att(
+    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None
+) -> float:
+    """
+    Calculate the standardized mean difference (SMD) for binary covariates
+    when estimand is the Average Treatment Effect among the Treated group (ATT).
+
+    Parameters
+    ----------
+    m1 : float
+        The mean of the covariate for the treatment group. Must be between 0 and 1.
+    m0 : float
+        The mean of the covariate for the control group. Must be between 0 and 1.
+    wt_m1 : float, optional
+        The weighted mean of the covariate for the treatment group. 
+        If not provided, `m1` is used. Must be between 0 and 1.
+    wt_m0 : float, optional
+        The weighted mean of the covariate for the control group. I
+        f not provided, `m0` is used. Must be between 0 and 1.
+
+    Returns
+    -------
+    float
+        The Standardized Mean Difference (SMD).
+    """
+    wt_m1 = m1 if wt_m1 is None else wt_m1
+    wt_m0 = m0 if wt_m0 is None else wt_m0
+    
+    std_factor = np.sqrt(m1 * (1 - m1))
+
+    smd = _calc_raw_smd(a=wt_m1, b=wt_m0, std_factor=std_factor)
+    return smd
 
 
-def _calc_smd_bin_covar_atc(*args, **kwargs):
-    raise NotImplementedError("SMD for ATC estimand is not yet implemented.")
+def _calc_smd_bin_covar_atc(
+    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None
+) -> float:
+    """
+    Calculate the standardized mean difference (SMD) for binary covariates
+    when estimand is the Average Treatment Effect among the Control group (ATC).
+
+    Parameters
+    ----------
+    m1 : float
+        The mean of the covariate for the treatment group. Must be between 0 and 1.
+    m0 : float
+        The mean of the covariate for the control group. Must be between 0 and 1.
+    wt_m1 : float, optional
+        The weighted mean of the covariate for the treatment group. 
+        If not provided, `m1` is used. Must be between 0 and 1.
+    wt_m0 : float, optional
+        The weighted mean of the covariate for the control group. I
+        f not provided, `m0` is used. Must be between 0 and 1.
+
+    Returns
+    -------
+    float
+        The Standardized Mean Difference (SMD).
+    """
+    wt_m1 = m1 if wt_m1 is None else wt_m1
+    wt_m0 = m0 if wt_m0 is None else wt_m0
+
+    std_factor = np.sqrt(m0 * (1 - m0))
+
+    smd = _calc_raw_smd(a=wt_m1, b=wt_m0, std_factor=std_factor)
+    return smd
 
 
-def _calc_smd_cont_covar_att(*args, **kwargs):
-    raise NotImplementedError("SMD for ATT estimand is not yet implemented.")
+def _calc_smd_cont_covar_att(m1: float, m0: float, s2_1: float, s2_0: float) -> float:
+    """
+    Calculate the standardized mean difference (SMD) for continuous covariates
+    when estimand is the Average Treatment Effect among the Treated group (ATT).
+
+    Parameters
+    ----------
+    m1 : float
+        The mean of the covariate for treated group (group 1).
+    m0 : float
+        The mean of the covariate for control group (group 0).
+    s2_1 : float
+        The variance of the covariate for treated group (group 1). 
+        Must be strictly positive.
+    s2_0 : float
+        The variance of the covariate for control group (group 0). 
+        Must be strictly positive.
+
+    Returns
+    -------
+    float
+        The standardized mean difference (SMD).
+    """
+    std_factor = np.sqrt(s2_1)
+    smd = _calc_raw_smd(a=m1, b=m0, std_factor=std_factor)
+    return smd
 
 
-def _calc_smd_cont_covar_atc(*args, **kwargs):
-    raise NotImplementedError("SMD for ATC estimand is not yet implemented.")
+def _calc_smd_cont_covar_atc(m1: float, m0: float, s2_1: float, s2_0: float) -> float:
+    """
+    Calculate the standardized mean difference (SMD) for continuous covariates
+    when estimand is the Average Treatment Effect among the Control group (ATC).
+
+    Parameters
+    ----------
+    m1 : float
+        The mean of the covariate for treated group (group 1).
+    m0 : float
+        The mean of the covariate for control group (group 0).
+    s2_1 : float
+        The variance of the covariate for treated group (group 1). 
+        Must be strictly positive.
+    s2_0 : float
+        The variance of the covariate for control group (group 0). 
+        Must be strictly positive.
+
+    Returns
+    -------
+    float
+        The standardized mean difference (SMD).
+    """
+    std_factor = np.sqrt(s2_0)
+    smd = _calc_raw_smd(a=m1, b=m0, std_factor=std_factor)
+    return smd
 
 
 def _calc_raw_smd(a: float, b: float, std_factor: float) -> float:

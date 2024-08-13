@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.0 (13/08/2024)
+
+- Added support for computing SMD for ATC and ATT causal estimand in case of binary treatment.
+
 ## v0.2.0 (12/08/2024)
 
 - Changed the modules structure.

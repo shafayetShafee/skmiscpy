@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "skmiscpy"
-version = "0.2.0"
+version = "0.3.0"
 description = "Contains a few functions useful for data-analysis, causal inference etc."
 authors = ["Shafayet Khan Shafee"]
 license = "MIT"

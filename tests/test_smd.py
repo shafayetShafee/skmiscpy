@@ -338,22 +338,25 @@ def test_compute_smd_att_atc(sample_data):
 
 # --- Test std_binary param ----
 
+
 def test_std_binary_calc_smd_covar(sample_data):
     smd = _calc_smd_covar(
         data=sample_data,
-        group='group',
-        covar='binary_var',
+        group="group",
+        covar="binary_var",
     )
     expected = np.float64(0.3333333)
     np.testing.assert_allclose(smd, expected, rtol=1e-4, atol=0)
 
 
 def test_compute_smd_invalid_std_binary_type(sample_data):
-    with pytest.raises(TypeError, match="The `std_binary` parameter must be of type bool"):
+    with pytest.raises(
+        TypeError, match="The `std_binary` parameter must be of type bool"
+    ):
         compute_smd(
-            sample_data, 
-            group='group', 
-            vars=["binary_var"], 
+            sample_data,
+            group="group",
+            vars=["binary_var"],
             wt_var="weights",
-            std_binary="True"
+            std_binary="True",
         )

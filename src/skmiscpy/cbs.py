@@ -13,6 +13,7 @@ def compute_smd(
     vars: List[str],
     group: str,
     wt_var: str = None,
+    std_binary: bool = False,
     estimand: str = "ATE",
 ) -> pd.DataFrame:
     """
@@ -21,7 +22,7 @@ def compute_smd(
     Parameters
     ----------
     data : pd.DataFrame
-        A pandas DataFrame containing the columns specified in `vars`, `group`, and optionally `wt_var`.
+        A pandas DataFrame containing the columns specified in ``vars``, ``group``, and optionally ``wt_var``.
 
     vars : List[str]
         A list of strings representing the variable names for which to calculate the SMD.
@@ -32,16 +33,39 @@ def compute_smd(
     wt_var : str, optional
         The name of the column containing weights. Defaults to None.
 
+    std_binary: bool
+        Should the mean differences for binary variables (i.e., difference in proportion) 
+        be standardized or not. Default is False. See notes.
+
     estimand : str, optional
-        The estimand type. Currently, only 'ATE' (Average Treatment Effect) is supported. Defaults to 'ATE'.
+        The estimand type. Currently, only ``'ATE'`` (Average Treatment Effect) is supported. Defaults to ``'ATE'``.
 
     Returns
     -------
     pd.DataFrame
         A DataFrame with columns:
-        - 'variable': The name of the variable.
-        - 'unadjusted_smd': The standardized mean difference without adjustment.
-        - 'adjusted_smd': The standardized mean difference with adjustment (if `wt_var` is provided).
+
+        * ``variable``: The name of the variable.
+        * ``unadjusted_smd``: The standardized mean difference without adjustment.
+        * ``adjusted_smd``: The standardized mean difference with adjustment (if ``wt_var`` is provided).
+
+    Notes
+    -----
+
+    The mean differences for continuous variables are standardized so that they are on the same scale
+    and so that they can be compared across variables, and they allow for a simple interpretation even 
+    when the details of the variable's original scale are unclear to the analyst. 
+    
+    None of these advantages are passed to binary variables because binary variables are already on the 
+    same scale (i.e., a proportion), and the scale is easily interpretable. In addition, the details of 
+    standardizing the proportion difference of a binary variable involve dividing the proportion difference 
+    by a variance, but the variance of a binary variable is a function of its proportion. Standardizing 
+    the proportion difference of a binary variable can yield the following counterintuitive result: 
+    if P\ :sub:`T`\ = 0.2 and P\ :sub:`C`\ = 0.3, the standardized difference in proportion would be 
+    different from that if P\ :sub:`T`\ = 0.5 and P\ :sub:`C`\ = 0.6, even though the expectation is that 
+    the balance statistic should be the same for both scenarios because both would yield the same degree 
+    of bias in the effect estimate.
+
 
     Examples
     --------
@@ -84,6 +108,7 @@ def compute_smd(
     data = _check_smd_data(
         data=data, group=group, vars=vars, wt_var=wt_var, estimand=estimand
     )
+    _check_param_type({"std_binary": std_binary}, bool)
 
     smd_results = []
     vars = [vars] if isinstance(vars, str) else vars
@@ -120,6 +145,7 @@ def _calc_smd_covar(
     covar: str,
     wt_var: str = None,
     estimand: str = "ATE",
+    std_binary: bool = False
 ) -> float:
     """
     Calculate the Standardized Mean Difference (SMD) for a covariate between two groups.
@@ -138,6 +164,9 @@ def _calc_smd_covar(
         The causal estimand to use. Defaults to "ATE" (Average Treatment Effect). Currently supported
         options are "ATT" (Average Treatment Effect among the Treated) and 
         "ATC" (Average Treatment Effect among the Control group).
+    std_binary: bool
+        Should the mean differences for binary variables (i.e., difference in proportion) 
+        be standardized or not. Default is False. See notes.
 
     Returns
     -------
@@ -185,14 +214,14 @@ def _calc_smd_covar(
         if data[covar].dropna().nunique() == 2:
             _check_proportion_within_range(wt_m1, wt_bin_custom_msg_1)
             _check_proportion_within_range(wt_m0, wt_bin_custom_msg_0)
-            return _calc_smd_bin_covar(estimand, m1=m1, m0=m0, wt_m1=wt_m1, wt_m0=wt_m0)
+            return _calc_smd_bin_covar(estimand, m1=m1, m0=m0, wt_m1=wt_m1, wt_m0=wt_m0, std_binary=std_binary)
         else:
             return _calc_smd_cont_covar(
                 estimand, m1=wt_m1, m0=wt_m0, s2_1=s2_1, s2_0=s2_0
             )
     else:
         if data[covar].dropna().nunique() == 2:
-            return _calc_smd_bin_covar(estimand, m1=m1, m0=m0)
+            return _calc_smd_bin_covar(estimand, m1=m1, m0=m0, std_binary=std_binary)
         else:
             return _calc_smd_cont_covar(estimand, m1=m1, m0=m0, s2_1=s2_1, s2_0=s2_0)
 
@@ -236,6 +265,8 @@ def _check_smd_data(
 
     _check_param_type({"data": data}, pd.DataFrame)
     _check_param_type({"group": group}, str)
+    if estimand:
+        _check_param_type({"estimand": estimand}, str)
 
     vars = [vars] if isinstance(vars, str) else vars
 
@@ -317,7 +348,7 @@ def _calc_smd_cont_covar(estimand, *args, **kwargs):
 
 
 def _calc_smd_bin_covar_ate(
-    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None
+    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None, std_binary: bool = False
 ) -> float:
     """
     Calculate the Standardized Mean Difference (SMD) for binary covariates using the Average Treatment Effect (ATE).
@@ -342,7 +373,7 @@ def _calc_smd_bin_covar_ate(
     wt_m0 = m0 if wt_m0 is None else wt_m0
 
     pooled_var = (m1 * (1 - m1)) + (m0 * (1 - m0))
-    std_factor = np.sqrt(pooled_var / 2)
+    std_factor = np.sqrt(pooled_var / 2) if std_binary else 1
 
     smd = _calc_raw_smd(a=wt_m1, b=wt_m0, std_factor=std_factor)
     return smd
@@ -375,7 +406,7 @@ def _calc_smd_cont_covar_ate(m1: float, m0: float, s2_1: float, s2_0: float) -> 
 
 
 def _calc_smd_bin_covar_att(
-    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None
+    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None, std_binary: bool = False
 ) -> float:
     """
     Calculate the standardized mean difference (SMD) for binary covariates
@@ -402,14 +433,14 @@ def _calc_smd_bin_covar_att(
     wt_m1 = m1 if wt_m1 is None else wt_m1
     wt_m0 = m0 if wt_m0 is None else wt_m0
     
-    std_factor = np.sqrt(m1 * (1 - m1))
+    std_factor = np.sqrt(m1 * (1 - m1)) if std_binary else 1
 
     smd = _calc_raw_smd(a=wt_m1, b=wt_m0, std_factor=std_factor)
     return smd
 
 
 def _calc_smd_bin_covar_atc(
-    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None
+    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None, std_binary: bool = False
 ) -> float:
     """
     Calculate the standardized mean difference (SMD) for binary covariates
@@ -436,7 +467,7 @@ def _calc_smd_bin_covar_atc(
     wt_m1 = m1 if wt_m1 is None else wt_m1
     wt_m0 = m0 if wt_m0 is None else wt_m0
 
-    std_factor = np.sqrt(m0 * (1 - m0))
+    std_factor = np.sqrt(m0 * (1 - m0)) if std_binary else 1
 
     smd = _calc_raw_smd(a=wt_m1, b=wt_m0, std_factor=std_factor)
     return smd

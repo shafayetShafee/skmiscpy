@@ -214,3 +214,38 @@ def _check_proportion_within_range(proportion: float, custom_msg: str) -> None:
         raise ValueError(
             f"The {custom_msg} must be within the range (0, 1). Found: {proportion}."
         )
+
+
+def _classify_columns(df: pd.DataFrame, columns: list[str]) -> dict[str, str]:
+    """
+    Classify columns in a DataFrame as either 'binary' or 'continuous'.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        The DataFrame containing the data.
+    columns : list[str]
+        A list of column names to be classified.
+
+    Returns:
+    -------
+    dict[str, str]
+        A dictionary where the keys are column names and the values are
+        either 'binary' or 'continuous'.
+        'binary' indicates the column has exactly 2 unique values, and
+        'continuous' indicates the column has more than 2 unique values or
+        is numeric.
+
+    Notes:
+    -----
+    - The function assumes all columns are either binary or continuous and
+      numeric, but does not check for object types.
+    - Columns with exactly 2 unique values are classified as 'binary'.
+    - Columns with more than 2 unique values or numeric types are classified
+      as 'continuous'.
+    """
+    result = {}
+    for col in columns:
+        n_unique = df[col].nunique(dropna=True)
+        result[col] = "Binary" if n_unique == 2 else "Continuous"
+    return result

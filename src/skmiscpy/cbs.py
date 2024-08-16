@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 
-from typing import List, Union
-from skmiscpy.utils import _check_param_type, _check_required_columns
+import warnings
+from typing import List
+from skmiscpy.utils import _check_param_type, _check_required_columns, _classify_columns
 from skmiscpy.utils import _check_variance_positive, _check_proportion_within_range
 
 
@@ -13,6 +12,8 @@ def compute_smd(
     vars: List[str],
     group: str,
     wt_var: str = None,
+    cat_vars: List[str] = None,
+    std_binary: bool = False,
     estimand: str = "ATE",
 ) -> pd.DataFrame:
     """
@@ -21,97 +22,271 @@ def compute_smd(
     Parameters
     ----------
     data : pd.DataFrame
-        A pandas DataFrame containing the columns specified in `vars`, `group`, and optionally `wt_var`.
+        A pandas DataFrame containing the columns specified in ``vars``, ``group``, and optionally ``wt_var``.
 
     vars : List[str]
-        A list of strings representing the variable names for which to calculate the SMD.
+        A list of strings representing the variables names for which to calculate the SMD, where the
+        variables should be either continuous or binary. The values of the binary variable could be
+        either string type or numerical, they would be converted into 0 and 1 (if they are not already
+        0-1), where lower value converted into 0 and higher value converted into 1. To compute SMD for
+        a discrete variable with more than two categories, pass that variable name in a list to the
+        ``cat_vars`` parameter.
 
     group : str
-        The name of the binary group column (e.g., treatment vs. control).
+        The name of the binary group column based on which the mean differences will be calculated.
 
     wt_var : str, optional
         The name of the column containing weights. Defaults to None.
 
+    cat_vars: List[str], optional
+        A list of strings representing the categorical (i.e. discrete) variables among the list
+        specified in the ``vars`` parameter.
+
+    std_binary: bool
+        Should the mean differences for binary variables (i.e., difference in proportion)
+        be standardized or not. Default is False. See notes.
+
     estimand : str, optional
-        The estimand type. Currently, only 'ATE' (Average Treatment Effect) is supported. Defaults to 'ATE'.
+        The estimand type. Currently, only ``"ATE"`` (Average Treatment Effect) is supported. Defaults to ``"ATE"``.
 
     Returns
     -------
     pd.DataFrame
         A DataFrame with columns:
-        - 'variable': The name of the variable.
-        - 'unadjusted_smd': The standardized mean difference without adjustment.
-        - 'adjusted_smd': The standardized mean difference with adjustment (if `wt_var` is provided).
+
+        * ``variables``: The name of the variable.
+        * ``var_types``: The type of the variable (Continuous or Binary).
+        * ``unadjusted_smd``: The standardized mean difference without adjustment.
+        * ``adjusted_smd``: The standardized mean difference with adjustment (if ``wt_var`` is provided).
+
+    Notes
+    -----
+
+    The mean differences for continuous variables are standardized so that they are on the same scale
+    and so that they can be compared across variables, and they allow for a simple interpretation even
+    when the details of the variable's original scale are unclear to the analyst.
+
+    None of these advantages are passed to binary variables because binary variables are already on the
+    same scale (i.e., a proportion), and the scale is easily interpretable. In addition, the details of
+    standardizing the proportion difference of a binary variable involve dividing the proportion difference
+    by a variance, but the variance of a binary variable is a function of its proportion. Standardizing
+    the proportion difference of a binary variable can yield the following counterintuitive result:
+    if P\ :sub:`T`\ = 0.2 and P\ :sub:`C`\ = 0.3, the standardized difference in proportion would be
+    different from that if P\ :sub:`T`\ = 0.5 and P\ :sub:`C`\ = 0.6, even though the expectation is that
+    the balance statistic should be the same for both scenarios because both would yield the same degree
+    of bias in the effect estimate. If still you want the standardized mean difference for binary variables,
+    use ``std_binary = True`` in ``compute_smd()``.
+
 
     Examples
     --------
-    1. Basic usage with unadjusted SMD only:
-
     >>> import pandas as pd
     >>> from skmiscpy import compute_smd
+    >>> import numpy as np
 
-    >>> data = pd.DataFrame({
-    ...     'variable1': [1, 2, 3, 4],
-    ...     'variable2': [2, 3, 4, 5],
-    ...     'group': [0, 1, 0, 1]
+    >>> sample_df = pd.DataFrame({
+    ...     'age': np.random.randint(18, 66, size=100),
+    ...     'weight': np.round(np.random.uniform(120, 200, size=100), 1),
+    ...     'gender': np.random.choice(['male', 'female'], size=100),
+    ...     'race': np.random.choice(
+    ...         ['white', 'black', 'hispanic'],
+    ...         size=100, p=[0.4, 0.3, 0.3]
+    ...     ),
+    ...     'educ_level': np.random.choice(
+    ...         ['bachelor', 'master', 'doctorate'],
+    ...         size=100, p=[0.3, 0.4, 0.3]
+    ...     ),
+    ...     'ps_wts': np.round(np.random.uniform(0.1, 1.0, size=100), 2),
+    ...     'group': np.random.choice(['treated', 'control'], size=100),
+    ...     'date': pd.date_range(start='2024-01-01', periods=100, freq='D')
     ... })
 
-    >>> compute_smd(data, vars=['variable1', 'variable2'], group='group')
-    # Returns a DataFrame with unadjusted SMD values for 'variable1' and 'variable2'.
+    1. Basic usage with unadjusted SMD only:
+
+    >>> compute_smd(sample_df, vars=['age', 'weight', 'gender'], group='group')
+    # Returns a DataFrame with unadjusted SMD values for 'age' and 'weight'.
 
     2. Including weights for adjusted SMD:
 
-    >>> data = pd.DataFrame({
-    ...     'variable1': [1, 2, 3, 4],
-    ...     'variable2': [2, 3, 4, 5],
-    ...     'group': [0, 1, 0, 1],
-    ...     'weights': [1.5, 2.0, 1.2, 1.8]
-    ... })
+    >>> compute_smd(sample_df, vars=['age', 'weight', 'gender'], group='group', wt_var='ps_wts')
+    # Returns a DataFrame with both unadjusted and adjusted SMD values for 'age' and 'weight'.
 
-    >>> compute_smd(data, vars=['variable1', 'variable2'], group='group', wt_var='weights')
-    # Returns a DataFrame with both unadjusted and adjusted SMD values for 'variable1' and 'variable2'.
+    3. Including categorical variables for adjusted SMD:
 
-    3. Single variable input:
+    >>> compute_smd(
+    ...     sample_df,
+    ...     vars=['age', 'weight', 'gender'],
+    ...     group='group',
+    ...     wt_var='ps_wts',
+    ...     cat_vars=['race', 'educ_level']
+    ... )
+    # Returns a DataFrame with unadjusted and adjusted SMD values for 'age', 'weight', 'race', and 'educ_level'.
 
-    >>> data = pd.DataFrame({
-    ...     'variable1': [1, 2, 3, 4],
-    ...     'group': [0, 1, 0, 1]
-    ... })
-
-    >>> compute_smd(data, vars='variable1', group='group')
-    # Returns a DataFrame with unadjusted SMD values for 'variable1'.
     """
-    data = _check_smd_data(
-        data=data, group=group, vars=vars, wt_var=wt_var, estimand=estimand
+    _check_param_type({"data": data}, pd.DataFrame)
+    _check_param_type({"group": group}, str)
+    _check_param_type({"std_binary": std_binary}, bool)
+
+    if estimand is not None:
+        _check_param_type({"estimand": estimand}, str)
+    else:
+        warnings.warn(
+            "Estimand can not be None. Results are shown considering 'ATE' as the estimand.",
+            UserWarning,
+        )
+        estimand = "ATE"
+
+    if not (isinstance(vars, list) and all(isinstance(v, str) for v in vars)):
+        raise TypeError("`vars` must be a list of strings")
+
+    if wt_var is not None:
+        _check_param_type({"wt_var": wt_var}, str)
+
+    if cat_vars is not None:
+        if not (
+            isinstance(cat_vars, list) and all(isinstance(v, str) for v in cat_vars)
+        ):
+            raise TypeError("`cat_vars` must be a list of strings")
+
+    data = _check_prep_smd_data(
+        data=data, group=group, vars=vars, wt_var=wt_var, cat_vars=cat_vars
     )
 
-    smd_results = []
-    vars = [vars] if isinstance(vars, str) else vars
+    covariates = list(set(data.columns) - {wt_var, group})
+    covariates_with_types = _classify_columns(data, covariates)
 
-    for var in vars:
+    if not std_binary:
+        if any(col_type == "binary" for col_type in covariates_with_types.values()):
+            print(
+                "For binary variables, the unstandardized mean differences are shown here. "
+                "See 'Notes' in function documentation for details."
+            )
+
+    smd_results = []
+
+    for var, var_type in covariates_with_types.items():
         if wt_var is not None:
             unadjusted_smd = _calc_smd_covar(
-                data=data, group=group, covar=var, estimand=estimand
+                data=data,
+                group=group,
+                covar=var,
+                estimand=estimand,
+                std_binary=std_binary,
             )
             adjusted_smd = _calc_smd_covar(
-                data=data, group=group, covar=var, wt_var=wt_var, estimand=estimand
+                data=data,
+                group=group,
+                covar=var,
+                wt_var=wt_var,
+                estimand=estimand,
+                std_binary=std_binary,
             )
             smd_results.append(
                 {
                     "variables": var,
+                    "var_types": var_type,
                     "unadjusted_smd": unadjusted_smd,
                     "adjusted_smd": adjusted_smd,
                 }
             )
         else:
             unadjusted_smd = _calc_smd_covar(
-                data=data, group=group, covar=var, estimand=estimand
+                data=data,
+                group=group,
+                covar=var,
+                estimand=estimand,
+                std_binary=std_binary,
             )
-            smd_results.append({"variables": var, "unadjusted_smd": unadjusted_smd})
+            smd_results.append(
+                {
+                    "variables": var,
+                    "var_types": var_type,
+                    "unadjusted_smd": unadjusted_smd,
+                }
+            )
 
     smd_df = pd.DataFrame(smd_results)
 
-    return smd_df
+    return smd_df.sort_values(by=["var_types", "variables"], ascending=[False, True])
+
+
+def _check_prep_smd_data(
+    data: pd.DataFrame,
+    group: str,
+    vars: List[str],
+    wt_var: str = None,
+    cat_vars: List[str] = None,
+) -> pd.DataFrame:
+    """
+    Validate and prepare the input data for SMD calculation.
+
+    Raises
+    ------
+    TypeError:
+        If data params is not a pd.DataFrame, if group, covar, or wt_var params are not strings.
+    ValueError
+        if estimand is invalid, if the group column does not contain binary values, or if the weight column
+        has non-positive or zero values.
+    """
+    required_columns = list(
+        set(
+            vars
+            + [group]
+            + ([wt_var] if wt_var else [])
+            + (cat_vars if cat_vars else [])
+        )
+    )
+    _check_required_columns(data, required_columns)
+    data = data.loc[:, required_columns]
+
+    for col in required_columns:
+        if data[col].isnull().any():
+            raise ValueError(f"The '{col}' column contains missing values.")
+
+    if wt_var is not None:
+        if not pd.api.types.is_numeric_dtype(data[wt_var]):
+            raise ValueError(f"The '{wt_var}' column must be numeric.")
+
+        if (data[wt_var] <= 0).any():
+            raise ValueError(
+                f"The '{wt_var}' column contains negative weight values. The weight values must be positive"
+            )
+
+    unique_groups = data[group].dropna().unique()
+    if len(unique_groups) == 2:
+        if set(unique_groups) != {0, 1}:
+            data[group] = (data[group] == unique_groups.max()).astype(int)
+    else:
+        raise ValueError(
+            f"The '{group}' column must be a binary column for valid SMD calculation."
+        )
+
+    binary_vars = {}
+    cat_vars_to_dummy = []
+    cols_to_iterate = set(vars + (cat_vars if cat_vars else []))
+
+    for var in cols_to_iterate:
+        unique_vals = data[var].dropna().unique()
+        if len(unique_vals) == 2:
+            binary_vars[var] = unique_vals
+        elif cat_vars and var in cat_vars and len(unique_vals) > 2:
+            cat_vars_to_dummy.append(var)
+        elif not pd.api.types.is_numeric_dtype(data[var]):
+            raise ValueError(
+                f"The '{var}' column must be continuous or binary."
+                "if it is a categorical column with more than two category,"
+                "enlist the column name using `cat_vars` parameter."
+            )
+
+    for bin_var, bin_val in binary_vars.items():
+        data[bin_var] = (data[bin_var] == bin_val.max()).astype(int)
+
+    if cat_vars_to_dummy:
+        data = pd.get_dummies(
+            data, columns=cat_vars_to_dummy, prefix=cat_vars_to_dummy, dtype=int
+        )
+
+    return data
 
 
 def _calc_smd_covar(
@@ -120,6 +295,7 @@ def _calc_smd_covar(
     covar: str,
     wt_var: str = None,
     estimand: str = "ATE",
+    std_binary: bool = False,
 ) -> float:
     """
     Calculate the Standardized Mean Difference (SMD) for a covariate between two groups.
@@ -136,8 +312,11 @@ def _calc_smd_covar(
         The column name of the weights. If None, only the unadjusted SMD is calculated. Defaults to None.
     estimand : str, optional
         The causal estimand to use. Defaults to "ATE" (Average Treatment Effect). Currently supported
-        options are "ATT" (Average Treatment Effect among the Treated) and 
+        options are "ATT" (Average Treatment Effect among the Treated) and
         "ATC" (Average Treatment Effect among the Control group).
+    std_binary: bool
+        Should the mean differences for binary variables (i.e., difference in proportion)
+        be standardized or not. Default is False. See notes.
 
     Returns
     -------
@@ -185,107 +364,18 @@ def _calc_smd_covar(
         if data[covar].dropna().nunique() == 2:
             _check_proportion_within_range(wt_m1, wt_bin_custom_msg_1)
             _check_proportion_within_range(wt_m0, wt_bin_custom_msg_0)
-            return _calc_smd_bin_covar(estimand, m1=m1, m0=m0, wt_m1=wt_m1, wt_m0=wt_m0)
+            return _calc_smd_bin_covar(
+                estimand, m1=m1, m0=m0, wt_m1=wt_m1, wt_m0=wt_m0, std_binary=std_binary
+            )
         else:
             return _calc_smd_cont_covar(
                 estimand, m1=wt_m1, m0=wt_m0, s2_1=s2_1, s2_0=s2_0
             )
     else:
         if data[covar].dropna().nunique() == 2:
-            return _calc_smd_bin_covar(estimand, m1=m1, m0=m0)
+            return _calc_smd_bin_covar(estimand, m1=m1, m0=m0, std_binary=std_binary)
         else:
             return _calc_smd_cont_covar(estimand, m1=m1, m0=m0, s2_1=s2_1, s2_0=s2_0)
-
-
-def _check_smd_data(
-    data: pd.DataFrame,
-    group: str,
-    vars: Union[str, List[str]],
-    wt_var: str = None,
-    estimand: str = "ATE",
-) -> pd.DataFrame:
-    """
-    Validate the input data for SMD calculation.
-
-    Parameters
-    ----------
-    data : pd.DataFrame
-        The DataFrame containing the data.
-    group : str
-        The column name for the group variable, which must be binary.
-    vars : str or list of str
-        The column name(s) of the covariates to be checked. It can be a single string or a list of strings.
-    wt_var : str, optional
-        The column name for weights, if applicable. Default is None.
-    estimand : str, optional
-        The causal estimand to use. Default is "ATE". Currently, only "ATE" is supported.
-
-    Returns
-    -------
-    pd.DataFrame
-        The validated DataFrame with adjusted group values if necessary.
-
-    Raises
-    ------
-    TypeError:
-        If `data` params is not a pd.DataFrame, if `group`, `covar`, or `wt_var` params are not strings.
-    ValueError
-        if `estimand` is invalid, if the `group` column does not contain binary values, or if the weight column
-        has non-positive or zero values.
-    """
-
-    _check_param_type({"data": data}, pd.DataFrame)
-    _check_param_type({"group": group}, str)
-
-    vars = [vars] if isinstance(vars, str) else vars
-
-    if not all(isinstance(v, str) for v in vars):
-        raise TypeError("`vars` must be a string or a list of strings")
-
-    required_columns = set(vars + [group])
-    if wt_var is not None:
-        required_columns.add(wt_var)
-
-    _check_required_columns(data, list(required_columns))
-
-    for col in [group] + vars + ([wt_var] if wt_var else []):
-        if data[col].isnull().any():
-            raise ValueError(f"The '{col}' column contains missing values.")
-
-    unique_groups = data[group].dropna().unique()
-    if len(unique_groups) == 2:
-        if set(unique_groups) != {0, 1}:
-            min_val, max_val = min(unique_groups), max(unique_groups)
-            data[group] = data[group].apply(lambda x: 0 if x == min_val else 1)
-    else:
-        raise ValueError(
-            f"The '{group}' column must be a binary column for valid SMD calculation."
-        )
-
-    for var in vars:
-        unique_vals = data[var].dropna().unique()
-        if len(unique_vals) == 2:
-            min_val = min(unique_vals)
-            data[var] = data[var].apply(lambda x: 0 if x == min_val else 1)
-
-        if not pd.api.types.is_numeric_dtype(data[var]):
-            if len(unique_vals) == 2:
-                raise ValueError(
-                    f"The '{var}' column could not be converted into 0-1 binary column."
-                )
-            else:
-                raise ValueError(f"The '{var}' column must be numeric.")
-
-    if wt_var is not None:
-        if not pd.api.types.is_numeric_dtype(data[wt_var]):
-            raise ValueError(f"The '{wt_var}' column must be numeric.")
-
-        if (data[wt_var] <= 0).any():
-            raise ValueError(
-                f"The '{wt_var}' column contains negative weight values. The weight values must be positive"
-            )
-
-    return data
 
 
 def _calc_smd_bin_covar(estimand, *args, **kwargs):
@@ -317,7 +407,11 @@ def _calc_smd_cont_covar(estimand, *args, **kwargs):
 
 
 def _calc_smd_bin_covar_ate(
-    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None
+    m1: float,
+    m0: float,
+    wt_m1: float = None,
+    wt_m0: float = None,
+    std_binary: bool = False,
 ) -> float:
     """
     Calculate the Standardized Mean Difference (SMD) for binary covariates using the Average Treatment Effect (ATE).
@@ -342,7 +436,7 @@ def _calc_smd_bin_covar_ate(
     wt_m0 = m0 if wt_m0 is None else wt_m0
 
     pooled_var = (m1 * (1 - m1)) + (m0 * (1 - m0))
-    std_factor = np.sqrt(pooled_var / 2)
+    std_factor = np.sqrt(pooled_var / 2) if std_binary else 1
 
     smd = _calc_raw_smd(a=wt_m1, b=wt_m0, std_factor=std_factor)
     return smd
@@ -375,7 +469,11 @@ def _calc_smd_cont_covar_ate(m1: float, m0: float, s2_1: float, s2_0: float) -> 
 
 
 def _calc_smd_bin_covar_att(
-    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None
+    m1: float,
+    m0: float,
+    wt_m1: float = None,
+    wt_m0: float = None,
+    std_binary: bool = False,
 ) -> float:
     """
     Calculate the standardized mean difference (SMD) for binary covariates
@@ -388,7 +486,7 @@ def _calc_smd_bin_covar_att(
     m0 : float
         The mean of the covariate for the control group. Must be between 0 and 1.
     wt_m1 : float, optional
-        The weighted mean of the covariate for the treatment group. 
+        The weighted mean of the covariate for the treatment group.
         If not provided, `m1` is used. Must be between 0 and 1.
     wt_m0 : float, optional
         The weighted mean of the covariate for the control group. I
@@ -401,15 +499,19 @@ def _calc_smd_bin_covar_att(
     """
     wt_m1 = m1 if wt_m1 is None else wt_m1
     wt_m0 = m0 if wt_m0 is None else wt_m0
-    
-    std_factor = np.sqrt(m1 * (1 - m1))
+
+    std_factor = np.sqrt(m1 * (1 - m1)) if std_binary else 1
 
     smd = _calc_raw_smd(a=wt_m1, b=wt_m0, std_factor=std_factor)
     return smd
 
 
 def _calc_smd_bin_covar_atc(
-    m1: float, m0: float, wt_m1: float = None, wt_m0: float = None
+    m1: float,
+    m0: float,
+    wt_m1: float = None,
+    wt_m0: float = None,
+    std_binary: bool = False,
 ) -> float:
     """
     Calculate the standardized mean difference (SMD) for binary covariates
@@ -422,7 +524,7 @@ def _calc_smd_bin_covar_atc(
     m0 : float
         The mean of the covariate for the control group. Must be between 0 and 1.
     wt_m1 : float, optional
-        The weighted mean of the covariate for the treatment group. 
+        The weighted mean of the covariate for the treatment group.
         If not provided, `m1` is used. Must be between 0 and 1.
     wt_m0 : float, optional
         The weighted mean of the covariate for the control group. I
@@ -436,7 +538,7 @@ def _calc_smd_bin_covar_atc(
     wt_m1 = m1 if wt_m1 is None else wt_m1
     wt_m0 = m0 if wt_m0 is None else wt_m0
 
-    std_factor = np.sqrt(m0 * (1 - m0))
+    std_factor = np.sqrt(m0 * (1 - m0)) if std_binary else 1
 
     smd = _calc_raw_smd(a=wt_m1, b=wt_m0, std_factor=std_factor)
     return smd
@@ -454,10 +556,10 @@ def _calc_smd_cont_covar_att(m1: float, m0: float, s2_1: float, s2_0: float) -> 
     m0 : float
         The mean of the covariate for control group (group 0).
     s2_1 : float
-        The variance of the covariate for treated group (group 1). 
+        The variance of the covariate for treated group (group 1).
         Must be strictly positive.
     s2_0 : float
-        The variance of the covariate for control group (group 0). 
+        The variance of the covariate for control group (group 0).
         Must be strictly positive.
 
     Returns
@@ -482,10 +584,10 @@ def _calc_smd_cont_covar_atc(m1: float, m0: float, s2_1: float, s2_0: float) -> 
     m0 : float
         The mean of the covariate for control group (group 0).
     s2_1 : float
-        The variance of the covariate for treated group (group 1). 
+        The variance of the covariate for treated group (group 1).
         Must be strictly positive.
     s2_0 : float
-        The variance of the covariate for control group (group 0). 
+        The variance of the covariate for control group (group 0).
         Must be strictly positive.
 
     Returns

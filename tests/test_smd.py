@@ -3,7 +3,37 @@ import pandas as pd
 import numpy as np
 
 from skmiscpy import compute_smd
-from skmiscpy.cbs import _check_smd_data, _calc_smd_covar
+from skmiscpy.cbs import _check_prep_smd_data, _calc_smd_covar
+
+
+@pytest.fixture
+def sample_data():
+    return pd.DataFrame(
+        {
+            "age": [25, 30, 35, 40, 45],
+            "weight": [150.5, 160.0, 155.3, 165.2, 170.8],
+            "gender_binary": [0, 1, 0, 1, 0],
+            "gender_label": ["male", "female", "male", "female", "male"],
+            "race": ["white", "black", "hispanic", "white", "black"],
+            "educ_level": ["bachelor", "master", "doctorate", "bachelor", "master"],
+            "ps_wts": [0.2, 0.4, 0.6, 0.8, 1.0],
+            "group": ["treated", "control", "treated", "control", "treated"],
+            "date": pd.date_range(start="2024-01-01", periods=5, freq="D"),
+        }
+    )
+
+
+@pytest.fixture
+def small_sample_data():
+    """Fixture to provide sample data for tests."""
+    return pd.DataFrame(
+        {
+            "group": [1, 1, 0, 0, 1, 0],
+            "binary_var": [1, 0, 0, 1, 1, 0],
+            "cont_var": [2.0, 2.7, 3.0, 3.5, 2.2, 3.3],
+            "weights": [1.0, 1.5, 2.0, 1.2, 1.1, 0.8],
+        }
+    )
 
 
 @pytest.fixture
@@ -19,155 +49,279 @@ def df_bin_zero_variance():
     )
 
 
-@pytest.fixture
-def sample_data():
-    """Fixture to provide sample data for tests."""
-    return pd.DataFrame(
-        {
-            "group": [1, 1, 0, 0, 1, 0],
-            "binary_var": [1, 0, 0, 1, 1, 0],
-            "cont_var": [2.0, 2.7, 3.0, 3.5, 2.2, 3.3],
-            "weights": [1.0, 1.5, 2.0, 1.2, 1.1, 0.8],
-        }
+# --- Test std_binary param ----------------------------------------------------------
+
+
+def test_std_binary_calc_smd_covar(small_sample_data):
+    smd = _calc_smd_covar(
+        data=small_sample_data,
+        group="group",
+        covar="binary_var",
     )
+    expected = np.float64(0.3333333)
+    np.testing.assert_allclose(smd, expected, rtol=1e-4, atol=0)
 
 
-# --- Testing _check_smd_data() ----
-
-
-def test_check_smd_data_valid(sample_data):
-    validated_data = _check_smd_data(
-        sample_data, group="group", vars=["binary_var"], wt_var="weights"
-    )
-    assert isinstance(validated_data, pd.DataFrame)
-
-
-def test_check_smd_data_invalid_group_type(sample_data):
-    with pytest.raises(TypeError, match="The `group` parameter must be of type str"):
-        _check_smd_data(sample_data, group=123, vars=["binary_var"], wt_var="weights")
-
-
-def test_check_smd_data_invalid_vars_type(sample_data):
-    with pytest.raises(TypeError, match="`vars` must be a string or a list of strings"):
-        _check_smd_data(sample_data, group="group", vars=[123], wt_var="weights")
-
-
-def test_check_smd_data_missing_group_column(sample_data):
-    data_missing_group = sample_data.drop(columns=["group"])
+def test_compute_smd_invalid_std_binary_type(small_sample_data):
     with pytest.raises(
-        ValueError,
-        match="The DataFrame is missing the following required columns: group",
+        TypeError, match="The `std_binary` parameter must be of type bool"
     ):
-        _check_smd_data(
-            data_missing_group, group="group", vars=["binary_var"], wt_var="weights"
+        compute_smd(
+            small_sample_data,
+            group="group",
+            vars=["binary_var"],
+            wt_var="weights",
+            std_binary="True",
         )
 
 
-def test_check_smd_data_missing_vars_column(sample_data):
-    data_missing_var = sample_data.drop(columns=["binary_var"])
+# Testing _check_prep_smd_data() -----------------------------------------------------
+
+
+def test_check_prep_smd_data_transformations_1(sample_data):
+    transformed_data = _check_prep_smd_data(
+        sample_data,
+        group="group",
+        vars=["age", "weight", "gender_binary", "gender_label", "race", "educ_level"],
+        wt_var="ps_wts",
+        cat_vars=["race", "educ_level"],
+    )
+
+    assert isinstance(transformed_data, pd.DataFrame)
+    assert transformed_data.shape[1] == 12
+    assert transformed_data["race_black"].equals(
+        pd.Series([0, 1, 0, 0, 1], name="race_black")
+    )
+    assert transformed_data["race_hispanic"].equals(
+        pd.Series([0, 0, 1, 0, 0], name="race_hispanic")
+    )
+    assert transformed_data["race_white"].equals(
+        pd.Series([1, 0, 0, 1, 0], name="race_white")
+    )
+    assert transformed_data["educ_level_bachelor"].equals(
+        pd.Series([1, 0, 0, 1, 0], name="educ_level_bachelor")
+    )
+    assert transformed_data["educ_level_doctorate"].equals(
+        pd.Series([0, 0, 1, 0, 0], name="educ_level_doctorate")
+    )
+    assert transformed_data["educ_level_master"].equals(
+        pd.Series([0, 1, 0, 0, 1], name="educ_level_master")
+    )
+
+    pd.testing.assert_series_equal(
+        transformed_data["age"],
+        sample_data["age"],
+        check_index_type=False,
+        check_dtype=False,
+    )
+    pd.testing.assert_series_equal(
+        transformed_data["weight"],
+        sample_data["weight"],
+        check_index_type=False,
+        check_dtype=False,
+    )
+    pd.testing.assert_series_equal(
+        transformed_data["ps_wts"],
+        sample_data["ps_wts"],
+        check_index_type=False,
+        check_dtype=False,
+    )
+    pd.testing.assert_series_equal(
+        transformed_data["gender_binary"],
+        sample_data["gender_binary"],
+        check_index_type=False,
+        check_dtype=False,
+    )
+    pd.testing.assert_series_equal(
+        transformed_data["gender_label"],
+        pd.Series([1, 0, 1, 0, 1], name="gender_label"),
+        check_index_type=False,
+        check_dtype=False,
+    )
+
+
+def test_check_prep_smd_data_transformations_2(sample_data):
+    transformed_data = _check_prep_smd_data(
+        sample_data,
+        group="group",
+        vars=["age", "weight", "gender_binary", "gender_label"],
+        cat_vars=["race", "educ_level"],
+    )
+
+    assert transformed_data.shape[1] == 11
+    assert transformed_data["race_black"].equals(
+        pd.Series([0, 1, 0, 0, 1], name="race_black")
+    )
+    assert transformed_data["race_hispanic"].equals(
+        pd.Series([0, 0, 1, 0, 0], name="race_hispanic")
+    )
+    assert transformed_data["race_white"].equals(
+        pd.Series([1, 0, 0, 1, 0], name="race_white")
+    )
+    assert transformed_data["educ_level_bachelor"].equals(
+        pd.Series([1, 0, 0, 1, 0], name="educ_level_bachelor")
+    )
+    assert transformed_data["educ_level_doctorate"].equals(
+        pd.Series([0, 0, 1, 0, 0], name="educ_level_doctorate")
+    )
+    assert transformed_data["educ_level_master"].equals(
+        pd.Series([0, 1, 0, 0, 1], name="educ_level_master")
+    )
+
+    pd.testing.assert_series_equal(
+        transformed_data["age"],
+        sample_data["age"],
+        check_index_type=False,
+        check_dtype=False,
+    )
+    pd.testing.assert_series_equal(
+        transformed_data["weight"],
+        sample_data["weight"],
+        check_index_type=False,
+        check_dtype=False,
+    )
+    pd.testing.assert_series_equal(
+        transformed_data["gender_binary"],
+        sample_data["gender_binary"],
+        check_index_type=False,
+        check_dtype=False,
+    )
+    pd.testing.assert_series_equal(
+        transformed_data["gender_label"],
+        pd.Series([1, 0, 1, 0, 1], name="gender_label"),
+        check_index_type=False,
+        check_dtype=False,
+    )
+
+
+def test_check_prep_smd_data_missing_column(sample_data):
     with pytest.raises(
-        ValueError,
-        match="The DataFrame is missing the following required columns: binary_var",
+        ValueError, match="The DataFrame is missing the following required columns"
     ):
-        _check_smd_data(
-            data_missing_var, group="group", vars=["binary_var"], wt_var="weights"
+        _check_prep_smd_data(
+            sample_data, group="group", vars=["age", "nonexistent"], wt_var="ps_wts"
         )
 
 
-def test_check_smd_data_missing_values(sample_data):
-    data_with_nan = sample_data.copy()
+def test_check_prep_smd_data_invalid_weight(sample_data):
+    invalid_data = sample_data.copy()
+    invalid_data["ps_wts"] = [-0.2, 0.4, -0.6, 0.8, 1.0]
+    with pytest.raises(
+        ValueError, match="The 'ps_wts' column contains negative weight values."
+    ):
+        _check_prep_smd_data(
+            invalid_data,
+            group="group",
+            vars=["age", "gender_label", "race"],
+            wt_var="ps_wts",
+        )
+
+
+def test_check_prep_smd_data_non_numeric_weight(sample_data):
+    invalid_data = sample_data.copy()
+    invalid_data["ps_wts"] = ["a", "b", "c", "d", "e"]
+    with pytest.raises(ValueError, match="The 'ps_wts' column must be numeric."):
+        _check_prep_smd_data(
+            invalid_data,
+            group="group",
+            vars=["age", "weight", "gender_binary", "gender_label", "race"],
+            wt_var="ps_wts",
+        )
+
+
+def test_check_prep_smd_data_non_binary_group(sample_data):
+    invalid_data = sample_data.copy()
+    invalid_data["group"] = [1, 2, 3, 4, 5]
+    with pytest.raises(
+        ValueError,
+        match="The 'group' column must be a binary column for valid SMD calculation.",
+    ):
+        _check_prep_smd_data(
+            invalid_data, group="group", vars=["age", "gender_binary", "race"]
+        )
+
+
+def test_check_prep_smd_data_non_numeric_or_binary_1(sample_data):
+    with pytest.raises(
+        ValueError, match="The 'date' column must be continuous or binary"
+    ):
+        _check_prep_smd_data(sample_data, group="group", vars=["age", "date"])
+
+
+def test_check_prep_smd_data_non_numeric_or_binary_2(sample_data):
+    with pytest.raises(
+        ValueError, match="The 'race' column must be continuous or binary"
+    ):
+        _check_prep_smd_data(sample_data, group="group", vars=["age", "race"])
+
+
+def test_check_prep_smd_data_missing_group(sample_data):
+    with pytest.raises(
+        ValueError, match="The DataFrame is missing the following required columns"
+    ):
+        _check_prep_smd_data(
+            sample_data,
+            group="missing_group",
+            vars=["age", "race"],
+            wt_var="ps_weights",
+        )
+
+
+def test_check_prep_smd_data_invalid_cat_vars(sample_data):
+    with pytest.raises(
+        ValueError, match="The DataFrame is missing the following required columns"
+    ):
+        _check_prep_smd_data(
+            sample_data,
+            group="group",
+            vars=["weight", "race"],
+            cat_vars=["invalid_cat"],
+        )
+
+
+def test_check_prep_smd_data_missing_values(small_sample_data):
+    data_with_nan = small_sample_data.copy()
     data_with_nan.loc[0, "binary_var"] = np.nan
     with pytest.raises(
         ValueError, match="The 'binary_var' column contains missing values."
     ):
-        _check_smd_data(
+        _check_prep_smd_data(
             data_with_nan, group="group", vars=["binary_var"], wt_var="weights"
         )
 
 
-def test_check_smd_data_non_binary_group(sample_data):
-    data_non_binary_group = sample_data.copy()
-    data_non_binary_group["group"] = [1, 2, 1, 0, 1, 0]
-    with pytest.raises(
-        ValueError,
-        match="The 'group' column must be a binary column for valid SMD calculation",
-    ):
-        _check_smd_data(
-            data_non_binary_group, group="group", vars=["binary_var"], wt_var="weights"
-        )
+# Test --- _calc_smd_covar() -------------------------------------------------------
 
 
-def test_check_smd_data_non_numeric_vars(sample_data):
-    data_non_numeric = sample_data.copy()
-    data_non_numeric["binary_var"] = ["a", "b", "c", "d", "e", "f"]
-    with pytest.raises(ValueError, match="The 'binary_var' column must be numeric"):
-        _check_smd_data(
-            data_non_numeric, group="group", vars=["binary_var"], wt_var="weights"
-        )
-
-
-def test_check_smd_data_non_positive_weights(sample_data):
-    data_non_positive_weights = sample_data.copy()
-    data_non_positive_weights["weights"] = [1.0, -1.5, 0, 1.2, 1.1, 0.8]
-    with pytest.raises(
-        ValueError,
-        match="The 'weights' column contains negative weight values. The weight values must be positive",
-    ):
-        _check_smd_data(
-            data_non_positive_weights,
-            group="group",
-            vars=["binary_var"],
-            wt_var="weights",
-        )
-
-
-def test_check_smd_data_non_numeric_binary_conversion(sample_data):
-    data_non_numeric_binary = sample_data.copy()
-    data_non_numeric_binary["binary_var"] = ["a", "a", "b", "b", "a", "b"]
-
-    expected_conversion = [0, 0, 1, 1, 0, 1]
-
-    validated_data = _check_smd_data(
-        data_non_numeric_binary, group="group", vars=["binary_var"], wt_var="weights"
-    )
-    assert isinstance(validated_data, pd.DataFrame)
-    assert "binary_var" in validated_data.columns
-    assert all(validated_data["binary_var"] == expected_conversion)
-    assert validated_data["binary_var"].dtype == int
-
-
-# Test --- _calc_smd_covar ----
-
-
-def test_calc_smd_covar_binary_unweighted(sample_data):
-    smd = _calc_smd_covar(data=sample_data, group="group", covar="binary_var")
+def test_calc_smd_covar_binary_unweighted(small_sample_data):
+    smd = _calc_smd_covar(data=small_sample_data, group="group", covar="binary_var")
     assert isinstance(smd, float)
     assert smd > 0
 
 
-def test_calc_smd_covar_binary_weighted(sample_data):
+def test_calc_smd_covar_binary_weighted(small_sample_data):
     smd = _calc_smd_covar(
-        data=sample_data, group="group", covar="binary_var", wt_var="weights"
+        data=small_sample_data, group="group", covar="binary_var", wt_var="weights"
     )
     assert isinstance(smd, float)
     assert smd > 0
 
 
-def test_calc_smd_covar_continuous_unweighted(sample_data):
-    smd = _calc_smd_covar(data=sample_data, group="group", covar="cont_var")
+def test_calc_smd_covar_continuous_unweighted(small_sample_data):
+    smd = _calc_smd_covar(data=small_sample_data, group="group", covar="cont_var")
     assert isinstance(smd, float)
     assert smd > 0
 
 
-def test_calc_smd_covar_continuous_weighted(sample_data):
+def test_calc_smd_covar_continuous_weighted(small_sample_data):
     smd = _calc_smd_covar(
-        data=sample_data, group="group", covar="cont_var", wt_var="weights"
+        data=small_sample_data, group="group", covar="cont_var", wt_var="weights"
     )
     assert isinstance(smd, float)
     assert smd > 0
 
 
-# --- zero variance and zero proportion
+# --- zero variance and zero proportion ----------------------------------------------
 
 
 def test_calc_smd_covar_zero_variance():
@@ -274,51 +428,9 @@ def test_calc_smd_covar_zero_proportion():
         _calc_smd_covar(data_zero_proportion_group0, group="group", covar="binary_var")
 
 
-# --- Test compute_smd ----
-
-
-def test_compute_smd_unweighted(sample_data):
-    smd_df = compute_smd(
-        data=sample_data, vars=["binary_var", "cont_var"], group="group"
-    )
-    assert isinstance(smd_df, pd.DataFrame)
-    assert "unadjusted_smd" in smd_df.columns
-    assert len(smd_df) == 2
-
-
-def test_compute_smd_weighted(sample_data):
-    smd_df = compute_smd(
-        data=sample_data,
-        vars=["binary_var", "cont_var"],
-        group="group",
-        wt_var="weights",
-    )
-    assert isinstance(smd_df, pd.DataFrame)
-    assert "unadjusted_smd" in smd_df.columns
-    assert "adjusted_smd" in smd_df.columns
-    assert len(smd_df) == 2
-
-
-def test_compute_smd_invalid_group_column(sample_data):
-    with pytest.raises(ValueError):
-        compute_smd(data=sample_data, vars=["binary_var"], group="invalid_group")
-
-
-def test_compute_smd_invalid_var_column(sample_data):
-    with pytest.raises(ValueError):
-        compute_smd(data=sample_data, vars=["invalid_var"], group="group")
-
-
-def test_compute_smd_invalid_estimand(sample_data):
-    with pytest.raises(ValueError):
-        compute_smd(
-            data=sample_data, vars=["binary_var"], group="group", estimand="INVALID"
-        )
-
-
-def test_compute_smd_att_atc(sample_data):
+def test_compute_smd_att_atc(small_sample_data):
     att_smd = _calc_smd_covar(
-        data=sample_data,
+        data=small_sample_data,
         group="group",
         covar="cont_var",
         wt_var="weights",
@@ -327,7 +439,7 @@ def test_compute_smd_att_atc(sample_data):
     assert isinstance(att_smd, float), "ATT SMD should return a float value"
 
     atc_smd = _calc_smd_covar(
-        data=sample_data,
+        data=small_sample_data,
         group="group",
         covar="binary_var",
         wt_var="weights",
@@ -335,3 +447,54 @@ def test_compute_smd_att_atc(sample_data):
     )
     assert isinstance(atc_smd, float), "ATC SMD should return a float value"
 
+
+# --- Testing compute_smd() --------------------------------------------------------
+
+
+def test_compute_smd_invalid_group_type(sample_data):
+    with pytest.raises(TypeError, match="The `group` parameter must be of type str"):
+        compute_smd(sample_data, group=123, vars=["age"])
+
+
+def test_compute_smd_invalid_vars_type_1(sample_data):
+    with pytest.raises(TypeError, match="`vars` must be a list of strings"):
+        compute_smd(sample_data, group="group", vars="age")
+
+
+def test_compute_smd_invalid_vars_type_2(sample_data):
+    with pytest.raises(TypeError, match="`vars` must be a list of strings"):
+        compute_smd(sample_data, group="group", vars=1)
+
+
+def test_compute_smd_invalid_cat_vars_type_1(sample_data):
+    with pytest.raises(TypeError, match="`cat_vars` must be a list of strings"):
+        compute_smd(sample_data, group="group", vars=["age"], cat_vars="race")
+
+
+def test_compute_smd_invalid_cat_vars_type_2(sample_data):
+    with pytest.raises(TypeError, match="`cat_vars` must be a list of strings"):
+        compute_smd(sample_data, group="group", vars=["age"], cat_vars=2)
+
+
+def test_compute_smd_invalid_wt_var_type(sample_data):
+    with pytest.raises(TypeError, match="`wt_var` parameter must be of type str"):
+        compute_smd(sample_data, group="group", vars=["age"], wt_var=2)
+
+
+def test_compute_smd_invalid_std_binary_type(sample_data):
+    with pytest.raises(TypeError, match="`std_binary` parameter must be of type bool"):
+        compute_smd(sample_data, group="group", vars=["age"], std_binary="yes")
+
+
+def test_compute_smd_warns_when_estimand_is_none(sample_data):
+    with pytest.warns(
+        UserWarning,
+        match="Estimand can not be None. Results are shown considering 'ATE' as the estimand.",
+    ):
+        result = compute_smd(
+            data=sample_data,
+            group="group",
+            vars=["age", "weight"],
+            wt_var="ps_wts",
+            estimand=None,
+        )

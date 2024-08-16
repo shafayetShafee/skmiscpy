@@ -25,15 +25,12 @@ def compute_smd(
         A pandas DataFrame containing the columns specified in ``vars``, ``group``, and optionally ``wt_var``.
 
     vars : List[str]
-        A list of strings representing the variable names for which to calculate the SMD. For continuous
-        variable and binary variable, there is no need to do any transformation. The values of the binary
-        variable could be either string type or numerical, they would be converted into 0 and 1 if they
-        are not already 0-1, where lower value converted into 0 and higher value converted into 1. For a
-        discrete variable with more than two category, if the categories are of type string, there is no
-        need to do any transformation also, ``compute_smd`` will calculate the SMD for each of the
-        categories. But if the categories of the discrete variable are of numerical type, ``cat_vars``
-        parameter should be used to denote the discrete variable name; Otherwise ``compute_smd`` will
-        consider the discrete variable as a continuous variable. Note that,
+        A list of strings representing the variables names for which to calculate the SMD, where the 
+        variables should be either continuous or binary. The values of the binary variable could be 
+        either string type or numerical, they would be converted into 0 and 1 (if they are not already 
+        0-1), where lower value converted into 0 and higher value converted into 1. To compute SMD for
+        a discrete variable with more than two categories, pass that variable name in a list to the
+        ``cat_vars`` parameter.
 
     group : str
         The name of the binary group column based on which the mean differences will be calculated.
@@ -158,7 +155,7 @@ def compute_smd(
     
     if not std_binary:
         if any(col_type == "binary" for col_type in covariates_with_types.values()):
-            print("For binary variables, the unstandardized mean differences are shown here."
+            print("For binary variables, the unstandardized mean differences are shown here. "
                   "See 'Notes' in function documentation for details."
             )
 

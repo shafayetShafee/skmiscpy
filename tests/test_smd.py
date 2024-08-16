@@ -204,12 +204,20 @@ def test_check_prep_smd_data_non_binary_group(sample_data):
             vars=['age', 'gender_binary', 'race']
         )
 
-def test_check_prep_smd_data_non_numeric_or_categorical(sample_data):
-    with pytest.raises(ValueError, match="The 'date' column must be numeric or categorial."):
+def test_check_prep_smd_data_non_numeric_or_binary_1(sample_data):
+    with pytest.raises(ValueError, match="The 'date' column must be continuous or binary"):
         _check_prep_smd_data(
             sample_data,
             group='group',
             vars=['age', 'date']
+        )
+
+def test_check_prep_smd_data_non_numeric_or_binary_2(sample_data):
+    with pytest.raises(ValueError, match="The 'race' column must be continuous or binary"):
+        _check_prep_smd_data(
+            sample_data,
+            group='group',
+            vars=['age', 'race']
         )
 
 def test_check_prep_smd_data_missing_group(sample_data):
@@ -419,4 +427,15 @@ def test_compute_smd_invalid_wt_var_type(sample_data):
 def test_compute_smd_invalid_std_binary_type(sample_data):
     with pytest.raises(TypeError, match="`std_binary` parameter must be of type bool"):
         compute_smd(sample_data, group="group", vars=['age'], std_binary='yes')
+
+def test_compute_smd_warns_when_estimand_is_none(sample_data):
+    with pytest.warns(UserWarning, match="Estimand can not be None. Results are shown considering 'ATE' as the estimand."):
+        result = compute_smd(
+            data=sample_data,
+            group='group',
+            vars=['age', 'weight'],
+            wt_var='ps_wts',
+            estimand=None
+        )
+
 

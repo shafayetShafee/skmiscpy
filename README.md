@@ -1,5 +1,7 @@
 # skmiscpy
 
+[![PyPI](https://img.shields.io/pypi/v/skmiscpy.svg)](https://pypi.org/project/skmiscpy/) ![Python Versions](https://img.shields.io/pypi/pyversions/skmiscpy) ![License](https://img.shields.io/pypi/l/skmiscpy) [![Build](https://github.com/shafayetShafee/skmiscpy/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/shafayetShafee/skmiscpy/actions/workflows/ci-cd.yml) [![codecov](https://codecov.io/github/shafayetShafee/skmiscpy/graph/badge.svg?token=OAZ6C1KHC9)](https://codecov.io/github/shafayetShafee/skmiscpy)
+
 Contains a few functions useful for data-analysis, causal inference etc.
 
 ## Installation
@@ -44,23 +46,44 @@ plot_mirror_histogram(
 ```
 ### Compute Standardized Mean Difference (SMD)
 
-``` python
-data = pd.DataFrame({
-    'group': [1, 0, 1, 0, 1, 0],
-    'age': [23, 35, 45, 50, 22, 30],
-    'bmi': [22.5, 27.8, 26.1, 28.5, 24.3, 29.0],
-    'blood_pressure': [120, 130, 140, 135, 125, 133],
-    'weights': [1.2, 0.8, 1.5, 0.7, 1.0, 0.9]
+```python
+sample_df = pd.DataFrame({
+    'age': np.random.randint(18, 66, size=100),
+    'weight': np.round(np.random.uniform(120, 200, size=100), 1),
+    'gender': np.random.choice(['male', 'female'], size=100),
+    'race': np.random.choice(
+        ['white', 'black', 'hispanic'],
+        size=100, p=[0.4, 0.3, 0.3]
+    ),
+    'educ_level': np.random.choice(
+        ['bachelor', 'master', 'doctorate'],
+        size=100, p=[0.3, 0.4, 0.3]
+    ),
+    'ps_wts': np.round(np.random.uniform(0.1, 1.0, size=100), 2),
+    'group': np.random.choice(['treated', 'control'], size=100),
+    'date': pd.date_range(start='2024-01-01', periods=100, freq='D')
 })
 
-# Compute SMD for 'age', 'bmi', and 'blood_pressure' under ATE estimand
-smd_results = compute_smd(data, vars=['age', 'bmi', 'blood_pressure'], group='group', estimand='ATE')
+# 1. Basic usage with unadjusted SMD only:
+compute_smd(sample_df, vars=['age', 'weight', 'gender'], group='group', estimand='ATE')
 
-# Compute SMD adjusted by weights
-smd_results_with_weights = compute_smd(data, vars=['age', 'bmi', 'blood_pressure'], group='group', wt_var='weights')
+# 2. Including weights for adjusted SMD:
+compute_smd(
+    sample_df, 
+    vars=['age', 'weight', 'gender'], 
+    group='group', wt_var='ps_wts',
+    estimand='ATE'
+)
 
-print(smd_results)
-print(smd_results_with_weights)
+# 3. Including categorical variables for adjusted SMD:
+compute_smd(
+    sample_df,
+    vars=['age', 'weight', 'gender'],
+    group='group',
+    wt_var='ps_wts',
+    cat_vars=['race', 'educ_level'],
+    estimand='ATE'
+)
 ```
 
 ### Create a love plot (point plot of SMD)

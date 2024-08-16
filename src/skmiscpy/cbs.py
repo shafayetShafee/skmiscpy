@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 import warnings
 from typing import List
@@ -85,51 +83,51 @@ def compute_smd(
 
     Examples
     --------
-    1. Basic usage with unadjusted SMD only:
-
     >>> import pandas as pd
     >>> from skmiscpy import compute_smd
+    >>> import numpy as np
 
-    >>> data = pd.DataFrame({
-    ...     'variable1': [1, 2, 3, 4],
-    ...     'variable2': [2, 3, 4, 5],
-    ...     'group': [0, 1, 0, 1]
+    >>> sample_df = pd.DataFrame({
+    ...     'age': np.random.randint(18, 66, size=100),
+    ...     'weight': np.round(np.random.uniform(120, 200, size=100), 1),
+    ...     'gender': np.random.choice(['male', 'female'], size=100),
+    ...     'race': np.random.choice(
+    ...         ['white', 'black', 'hispanic'],
+    ...         size=100, p=[0.4, 0.3, 0.3]
+    ...     ),
+    ...     'educ_level': np.random.choice(
+    ...         ['bachelor', 'master', 'doctorate'],
+    ...         size=100, p=[0.3, 0.4, 0.3]
+    ...     ),
+    ...     'ps_wts': np.round(np.random.uniform(0.1, 1.0, size=100), 2),
+    ...     'group': np.random.choice(['treated', 'control'], size=100),
+    ...     'date': pd.date_range(start='2024-01-01', periods=100, freq='D')
     ... })
 
-    >>> compute_smd(data, vars=['variable1', 'variable2'], group='group')
-    # Returns a DataFrame with unadjusted SMD values for 'variable1' and 'variable2'.
+    1. Basic usage with unadjusted SMD only:
+
+    >>> compute_smd(sample_df, vars=['age', 'weight', 'gender'], group='group')
+    # Returns a DataFrame with unadjusted SMD values for 'age' and 'weight'.
 
     2. Including weights for adjusted SMD:
 
-    >>> data = pd.DataFrame({
-    ...     'variable1': [1, 2, 3, 4],
-    ...     'variable2': [2, 3, 4, 5],
-    ...     'group': [0, 1, 0, 1],
-    ...     'weights': [1.5, 2.0, 1.2, 1.8]
-    ... })
+    >>> compute_smd(sample_df, vars=['age', 'weight', 'gender'], group='group', wt_var='ps_wts')
+    # Returns a DataFrame with both unadjusted and adjusted SMD values for 'age' and 'weight'.
 
-    >>> compute_smd(data, vars=['variable1', 'variable2'], group='group', wt_var='weights')
-    # Returns a DataFrame with both unadjusted and adjusted SMD values for 'variable1' and 'variable2'.
+    3. Including categorical variables for adjusted SMD:
 
-    3. Single variable input:
+    >>> compute_smd(
+    ...     sample_df,
+    ...     vars=['age', 'weight', 'gender'],
+    ...     group='group',
+    ...     wt_var='ps_wts',
+    ...     cat_vars=['race', 'educ_level']
+    ... )
+    # Returns a DataFrame with unadjusted and adjusted SMD values for 'age', 'weight', 'race', and 'educ_level'.
 
-    >>> data = pd.DataFrame({
-    ...     'variable1': [1, 2, 3, 4],
-    ...     'group': [0, 1, 0, 1]
-    ... })
-
-    >>> compute_smd(data, vars='variable1', group='group')
-    # Returns a DataFrame with unadjusted SMD values for 'variable1'.
     """
     _check_param_type({"data": data}, pd.DataFrame)
     _check_param_type({"group": group}, str)
-    if not std_binary:
-        print(
-            """
-        For binary variables, the unstandardized mean differences are shown here. 
-        See 'Notes' in function documentation for details.
-        """
-        )
     _check_param_type({"std_binary": std_binary}, bool)
 
     if estimand is not None:
@@ -141,17 +139,14 @@ def compute_smd(
         )
         estimand = "ATE"
 
-    vars = [vars] if not isinstance(vars, list) else vars
-    cat_vars = [cat_vars] if not isinstance(cat_vars, list) else cat_vars
-
-    if not all(isinstance(v, str) for v in vars):
+    if not (isinstance(vars, list) and all(isinstance(v, str) for v in vars)):
         raise TypeError("`vars` must be a list of strings")
 
     if wt_var is not None:
         _check_param_type({"wt_var": wt_var}, str)
 
     if cat_vars is not None:
-        if not all(isinstance(v, str) for v in cat_vars):
+        if not (isinstance(cat_vars, list) and all(isinstance(v, str) for v in cat_vars)):
             raise TypeError("`cat_vars` must be a list of strings")
 
     data = _check_prep_smd_data(
@@ -160,16 +155,22 @@ def compute_smd(
 
     covariates = list(set(data.columns) - {wt_var, group})
     covariates_with_types = _classify_columns(data, covariates)
+    
+    if not std_binary:
+        if any(col_type == "binary" for col_type in covariates_with_types.values()):
+            print("For binary variables, the unstandardized mean differences are shown here."
+                  "See 'Notes' in function documentation for details."
+            )
 
     smd_results = []
 
     for var, var_type in covariates_with_types.items():
         if wt_var is not None:
             unadjusted_smd = _calc_smd_covar(
-                data=data, group=group, covar=var, estimand=estimand
+                data=data, group=group, covar=var, estimand=estimand, std_binary=std_binary
             )
             adjusted_smd = _calc_smd_covar(
-                data=data, group=group, covar=var, wt_var=wt_var, estimand=estimand
+                data=data, group=group, covar=var, wt_var=wt_var, estimand=estimand, std_binary=std_binary
             )
             smd_results.append(
                 {
@@ -181,13 +182,19 @@ def compute_smd(
             )
         else:
             unadjusted_smd = _calc_smd_covar(
-                data=data, group=group, covar=var, estimand=estimand
+                data=data, group=group, covar=var, estimand=estimand, std_binary=std_binary
             )
-            smd_results.append({"variables": var, "unadjusted_smd": unadjusted_smd})
+            smd_results.append(
+                {
+                    "variables": var, 
+                    "var_types": var_type,
+                    "unadjusted_smd": unadjusted_smd
+                }
+            )
 
     smd_df = pd.DataFrame(smd_results)
 
-    return smd_df
+    return smd_df.sort_values(by = ['var_types', 'variables'], ascending=[False, True])
 
 
 def _check_prep_smd_data(
@@ -252,7 +259,11 @@ def _check_prep_smd_data(
         elif cat_vars and var in cat_vars and len(unique_vals) > 2:
             cat_vars_to_dummy.append(var)
         elif not pd.api.types.is_numeric_dtype(data[var]):
-            raise ValueError(f"The '{var}' column must be numeric or categorial.")
+            raise ValueError(
+                f"The '{var}' column must be continuous or binary."
+                "if it is a categorical column with more than two category,"
+                "enlist the column name using `cat_vars` parameter."
+            )
 
     for bin_var, bin_val in binary_vars.items():
         data[bin_var] = (data[bin_var] == bin_val.max()).astype(int)

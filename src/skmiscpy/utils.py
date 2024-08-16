@@ -247,5 +247,5 @@ def _classify_columns(df: pd.DataFrame, columns: list[str]) -> dict[str, str]:
     result = {}
     for col in columns:
         n_unique = df[col].nunique(dropna=True)
-        result[col] = "Binary" if n_unique == 2 else "Continuous"
+        result[col] = "binary" if n_unique == 2 else "continuous"
     return result
